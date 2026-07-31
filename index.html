@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>GoalTree</title>
+<!-- Entry point for the bare Pages URL, which would otherwise show a file listing.
+     TreeIns.html stays the app itself (sw.js, manifest.json and the project skills all
+     reference it by name), so this only forwards. The redirect is replace(), not assign(),
+     so the back button doesn't bounce the user between the two. -->
+<link rel="canonical" href="./TreeIns.html">
+<meta http-equiv="refresh" content="0; url=./TreeIns.html">
+<style>
+  html,body{margin:0;height:100%;background:#F7F1E5;color:#2F4A3C;
+    font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;}
+  @media (prefers-color-scheme: dark){ html,body{background:#121212;color:#6FAE93;} }
+  .wrap{height:100%;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;}
+  a{color:inherit;}
+</style>
+</head>
+<body>
+<div class="wrap"><p>Открываем GoalTree… <a href="./TreeIns.html">Перейти вручную</a></p></div>
+<script>location.replace('./TreeIns.html');</script>
+</body>
+</html>

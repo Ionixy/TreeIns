@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Установить GoalTree</title>
+<meta name="theme-color" content="#2F4A3C">
+<link rel="icon" href="icon-192.png">
+<style>
+  /* Same palette as the app, so the install page doesn't look like a different product. */
+  :root{
+    --bg:#F7F1E5; --bg-alt:#EDE4D2; --paper:#FBF7EC; --ink:#23281F; --ink-soft:#63614f;
+    --pine:#2F4A3C; --gold:#C9932C; --gold-soft:#EAD199; --line:#C9BC98;
+    --shadow:0 2px 10px rgba(47,74,60,.08),0 1px 2px rgba(47,74,60,.10);
+  }
+  html[data-theme="dark"]{
+    --bg:#121212; --bg-alt:#1A1A1A; --paper:#1E1E1E; --ink:#ECECEC; --ink-soft:#9C9C9C;
+    --pine:#6FAE93; --gold:#E8C874; --gold-soft:#33301E; --line:#333333;
+    --shadow:0 4px 18px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.04);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#121212; --bg-alt:#1A1A1A; --paper:#1E1E1E; --ink:#ECECEC; --ink-soft:#9C9C9C;
+      --pine:#6FAE93; --gold:#E8C874; --gold-soft:#33301E; --line:#333333;
+      --shadow:0 4px 18px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.04);
+    }
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--bg); color:var(--ink); min-height:100vh; font-size:16px;
+    font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+    -webkit-text-size-adjust:100%;}
+  .wrap{max-width:460px; margin:0 auto; padding:28px 16px 48px;}
+  header{display:flex; align-items:center; gap:10px; margin-bottom:6px;}
+  header svg{width:34px; height:34px; flex:none;}
+  h1{font-size:22px; margin:0; color:var(--pine);}
+  .lede{margin:0 0 22px; font-size:13.5px; font-style:italic; color:var(--ink-soft);}
+  .card{background:var(--paper); border:1px solid var(--line); border-radius:20px;
+    padding:18px; box-shadow:var(--shadow); margin-bottom:16px;}
+  .card h2{margin:0 0 4px; font-size:17px; color:var(--pine);
+    display:flex; align-items:center; gap:8px;}
+  .card p{margin:0 0 12px; font-size:13.5px; color:var(--ink-soft); line-height:1.5;}
+  .btn{display:block; width:100%; text-align:center; text-decoration:none;
+    background:var(--pine); color:var(--paper); border:none; border-radius:12px;
+    padding:14px 18px; font-size:15px; font-family:"Avenir Next","Segoe UI",sans-serif;
+    cursor:pointer; min-height:48px;}
+  .btn.secondary{background:var(--bg-alt); color:var(--ink);}
+  ol{margin:0 0 14px; padding-left:20px; font-size:14px; line-height:1.75;}
+  ol b{color:var(--pine);}
+  .note{font-size:12px; color:var(--ink-soft); line-height:1.5; margin:12px 0 0;
+    font-family:"Avenir Next","Segoe UI",sans-serif;}
+  .warn{border-left:3px solid var(--gold); background:var(--gold-soft); color:var(--ink);
+    padding:12px 14px; border-radius:0 10px 10px 0; font-size:13px; line-height:1.55;
+    margin:20px 0 0; font-family:"Avenir Next","Segoe UI",sans-serif;}
+  .warn b{display:block; margin-bottom:4px;}
+  .hidden{display:none;}
+  footer{margin-top:26px; text-align:center; font-size:12px; color:var(--ink-soft);}
+  footer a{color:var(--pine);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <svg viewBox="0 0 34 34" aria-hidden="true">
+      <path d="M17 4l7 9h-4l6 8h-4l5 9H11l5-9H12l6-8h-4z" fill="var(--pine)"/>
+      <rect x="15" y="27" width="4" height="6" fill="var(--gold)"/>
+    </svg>
+    <h1>GoalTree</h1>
+  </header>
+  <p class="lede">Дерево целей, которое работает без интернета.</p>
+
+  <!-- Android -->
+  <section class="card hidden" id="android">
+    <h2>📱 Android</h2>
+    <p>Скачайте один файл и установите его — браузер и интернет дальше не нужны.</p>
+    <a class="btn" id="apk-link" href="https://github.com/Ionixy/TreeIns/releases/latest/download/goaltree.apk">Скачать APK</a>
+    <p class="note">При первой установке Android один раз спросит разрешение
+      «Установка неизвестных приложений» для вашего браузера — это системное требование,
+      обойти его нельзя. Разрешите и вернитесь к загрузке.</p>
+  </section>
+
+  <!-- iOS -->
+  <section class="card hidden" id="ios">
+    <h2>🍏 iPhone / iPad</h2>
+    <p>Установка одним файлом на iOS невозможна без платного аккаунта разработчика Apple.
+      Зато Safari умеет ставить приложение с сайта — получится тот же значок на экране.</p>
+    <ol>
+      <li>Откройте эту страницу <b>в Safari</b> (не в Chrome и не внутри другого приложения).</li>
+      <li>Нажмите <b>«Поделиться»</b> — квадрат со стрелкой вверх.</li>
+      <li>Выберите <b>«На экран „Домой“»</b>.</li>
+      <li>Нажмите <b>«Добавить»</b>.</li>
+    </ol>
+    <a class="btn secondary" href="./TreeIns.html">Открыть приложение</a>
+  </section>
+
+  <!-- Desktop: show both -->
+  <section class="card hidden" id="desktop">
+    <h2>💻 Компьютер</h2>
+    <p>Приложение открывается прямо в браузере. Chrome и Edge предложат установить его
+      как отдельное окно — значок установки появится в адресной строке.</p>
+    <a class="btn" href="./TreeIns.html">Открыть приложение</a>
+    <p class="note">Чтобы поставить на телефон, откройте эту страницу на нём —
+      инструкция подстроится под систему.</p>
+  </section>
+
+  <div class="warn">
+    <b>Две установки — два разных хранилища</b>
+    Версия из APK и версия с сайта хранят цели раздельно: браузер привязывает данные к
+    источнику, а он у них разный. Цели, созданные в одной, не появятся в другой.
+    Синхронизации между ними нет — выберите что-то одно и пользуйтесь им.
+  </div>
+
+  <footer>
+    <a href="https://github.com/Ionixy/TreeIns">Исходный код на GitHub</a>
+  </footer>
+</div>
+
+<script>
+(function(){
+  var ua = navigator.userAgent || '';
+  // iPadOS 13+ reports itself as a Mac, so the touch check is what actually catches iPads.
+  var isIOS = /iPad|iPhone|iPod/.test(ua) ||
+              (/Macintosh/.test(ua) && typeof document.ontouchend !== 'undefined');
+  var isAndroid = /Android/.test(ua);
+  var show = isAndroid ? 'android' : isIOS ? 'ios' : 'desktop';
+  document.getElementById(show).classList.remove('hidden');
+  // On a desktop there's no way to guess which phone the user owns, so offer both routes.
+  if(show === 'desktop'){
+    document.getElementById('android').classList.remove('hidden');
+    document.getElementById('ios').classList.remove('hidden');
+  }
+})();
+</script>
+</body>
+</html>

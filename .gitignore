@@ -1,1 +1,33 @@
 .claude/settings.local.json
+
+# ---- Android build ----
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/.idea/
+android/*.iml
+android/app/*.iml
+android/captures/
+android/.externalNativeBuild/
+android/.cxx/
+
+# Web app files are copied into the APK by the copyWebApp Gradle task, so the
+# originals in the repo root stay the single source of truth — never commit the copies.
+android/app/src/main/assets/
+
+# ---- Signing ----
+# Losing these means never being able to update an installed APK again. Keep them
+# backed up somewhere safe OUTSIDE this repository.
+*.jks
+*.keystore
+android/keystore.properties
+
+# ---- Build output ----
+# APKs ship through GitHub Releases, not git.
+*.apk
+*.aab
+
+# ---- OS / editor noise ----
+.DS_Store
+Thumbs.db

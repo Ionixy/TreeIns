@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Same palette as the web app's :root variables. -->
+    <color name="pine">#2F4A3C</color>       <!-- --pine, also manifest.json theme_color -->
+    <color name="paper">#F7F1E5</color>      <!-- --bg (light) -->
+    <color name="trunk">#8A6B3F</color>      <!-- icon trunk -->
+    <color name="ink_dark_bg">#121212</color><!-- --bg (dark) -->
+</resources>

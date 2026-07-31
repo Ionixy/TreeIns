@@ -1,0 +1,86 @@
+plugins {
+    id 'com.android.application'
+}
+
+// Release signing is read from android/keystore.properties, which is gitignored.
+// Without it the release build still configures, it just can't be signed — that keeps
+// `git clone && ./gradlew assembleDebug` working for anyone without the key.
+def keystorePropsFile = rootProject.file('keystore.properties')
+def keystoreProps = new Properties()
+if (keystorePropsFile.exists()) {
+    keystoreProps.load(new FileInputStream(keystorePropsFile))
+}
+
+android {
+    namespace 'com.ionixy.treeins'
+    compileSdk 34
+
+    defaultConfig {
+        // NEVER change this. Android ties the installed app's identity — and therefore
+        // its private storage, where every goal lives — to the applicationId. A new id
+        // is a different app: the old data becomes unreachable.
+        applicationId "com.ionixy.treeins"
+        minSdk 24
+        targetSdk 34
+
+        // Bump both for every release. versionCode must strictly increase or Android
+        // refuses to install the update over the existing app.
+        versionCode 1
+        versionName "1.0.0"
+    }
+
+    if (keystorePropsFile.exists()) {
+        signingConfigs {
+            release {
+                storeFile file(keystoreProps['storeFile'])
+                storePassword keystoreProps['storePassword']
+                keyAlias keystoreProps['keyAlias']
+                keyPassword keystoreProps['keyPassword']
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            if (keystorePropsFile.exists()) {
+                signingConfig signingConfigs.release
+            }
+            minifyEnabled false      // one small activity; shrinking buys nothing here
+            shrinkResources false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'androidx.activity:activity:1.9.2'   // OnBackPressedDispatcher
+    implementation 'androidx.webkit:webkit:1.11.0'      // WebViewAssetLoader
+}
+
+// The web app is copied into assets at build time instead of being committed twice.
+// Keeping a second copy of TreeIns.html under android/ would silently drift from the
+// real one the moment either is edited.
+def webAppFiles = [
+        'TreeIns.html',
+        'manifest.json',
+        'icon-192.png',
+        'icon-512.png',
+        'apple-touch-icon.png'
+]
+
+tasks.register('copyWebApp', Copy) {
+    description = 'Copies the web app from the repo root into the APK assets.'
+    from rootProject.file('..')
+    include webAppFiles
+    into layout.projectDirectory.dir('src/main/assets')
+    // sw.js is deliberately NOT copied: inside the APK the files are already local, and a
+    // service worker cache would outlive an app update and keep serving the old UI.
+}
+
+tasks.named('preBuild') { dependsOn 'copyWebApp' }

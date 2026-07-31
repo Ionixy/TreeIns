@@ -1290,9 +1290,18 @@ function updateEdgesForNode(nodeId,left,top){
 
 function confirmSafe(msg){ try{ return window.confirm(msg); }catch(e){ return true; } }
 
-// Only works over http(s) (registration is a no-op on file://, which is fine —
-// the app is fully self-contained and already works offline via localStorage).
-if('serviceWorker' in navigator && location.protocol.startsWith('http')){
+// Host that WebViewAssetLoader serves the bundled copy from inside the Android APK.
+const ANDROID_ASSET_HOST = 'appassets.androidplatform.net';
+
+// Only works over http(s) (registration is a no-op on file://, which is fine — the app is
+// fully self-contained and already works offline via localStorage).
+//
+// Inside the APK it's deliberately skipped: the loader serves over https, so the protocol
+// check alone would pass and the worker would install. It isn't needed there — the files
+// are already local — and it would actively hurt, because its cache outlives an app
+// update and would keep serving the previous build's UI after the user installs a new APK.
+if('serviceWorker' in navigator && location.protocol.startsWith('http')
+   && location.hostname !== ANDROID_ASSET_HOST){
   window.addEventListener('load', ()=>{
     navigator.serviceWorker.register('sw.js').catch(e=>console.error('SW registration failed', e));
   });
