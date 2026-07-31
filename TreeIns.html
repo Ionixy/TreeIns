@@ -127,50 +127,61 @@
   /* absolute-position layout grid: node coordinates come from computeTreeLayout(),
      not from DOM flow, so alignment can't drift with content width/height. */
   .tree{transform-origin:top center; position:relative; margin:0 auto;}
-  .node-pos{position:absolute; display:flex; justify-content:center; z-index:1;}
+  /* The wrapper is absolutely positioned by computeTreeLayout(), so anything stacked
+     inside it (card + an open add-branch panel) can grow downwards without shifting a
+     single other node — the panel gets its exact place under the card for free, with no
+     DOM measuring and no second set of coordinates to keep in sync. */
+  .node-pos{position:absolute; display:flex; flex-direction:column; align-items:center; gap:8px; z-index:1;}
   .node-draggable{cursor:grab; touch-action:none;}
   .node-draggable.dragging{cursor:grabbing; z-index:10; opacity:.85;}
+  /* Only one panel is open at a time, so lifting just that node above its neighbours is
+     enough. Re-flowing the row instead would shove every node below it down the screen
+     the moment you tap +, moving the very card you're working on. */
+  .node-pos.has-panel{z-index:6;}
   .tree-lines{position:absolute; inset:0; z-index:0; pointer-events:none; overflow:visible;}
   .tree-lines path{stroke:var(--line); stroke-width:2; fill:none;}
 
-  .node-card{display:inline-flex; flex-direction:column; align-items:center; gap:4px; background:var(--paper);
-    border:1.5px solid var(--pine-light); border-radius:12px; padding:9px 12px; width:130px;
-    box-shadow:var(--shadow); position:relative; z-index:1;}
+  .node-card{display:flex; flex-direction:column; align-items:center; gap:5px; background:var(--paper);
+    border:1.5px solid var(--pine-light); border-radius:12px; padding:10px 12px; width:160px;
+    box-shadow:var(--shadow); position:relative; text-align:center;}
   .node-card.root{color:#F7F1E5;}
   .node-card.task{border-color:var(--line);}
   .node-card.task.done{background:var(--gold-soft); border-color:var(--gold);}
-  .node-card.editing{z-index:5;} /* an open inline add/edit form may grow taller than its row slot */
 
-  /* collapsed intermediate/leaf nodes: fixed-size dot instead of a full card */
-  .node-dot{border:none; background:none; cursor:pointer; padding:4px; margin:0 auto;
-    display:flex; align-items:center; justify-content:center; width:28px; height:28px;}
-  .node-dot.branch svg{display:block; width:28px; height:28px;}
-  .node-dot.leaf .dot-fill{width:14px; height:14px; border-radius:50%; background:var(--paper);
-    border:2px solid var(--line); display:block;}
-  .node-dot.leaf.done .dot-fill{background:var(--pine); border-color:var(--pine);}
-
-  .node-text{font-size:13px; line-height:1.3; max-width:130px;}
-  .node-card.root .node-text{font-size:14.5px; font-weight:600;}
+  /* Both text blocks are line-clamped: an unbounded title or description would make cards
+     wildly different heights, which breaks the row rhythm and the edge anchors. */
+  .node-title{font-size:14px; line-height:1.3; font-weight:600; color:var(--ink); overflow:hidden;
+    display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow-wrap:anywhere;}
+  .node-card.root .node-title{font-size:15px; color:#F7F1E5;}
+  .node-desc{font-size:11.5px; line-height:1.35; color:var(--ink-soft); overflow:hidden;
+    display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:3; overflow-wrap:anywhere;}
+  .node-card.root .node-desc{color:rgba(247,241,229,.8);}
   .node-progress{font-family:"Menlo",monospace; font-size:10px; color:var(--ink-soft);}
   .node-card.root .node-progress{color:rgba(247,241,229,.75);}
-  .leaf-toggle{width:26px; height:26px; border-radius:50%; border:none; background:var(--bg-alt);
-    font-size:14px; display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none;}
-  .leaf-toggle.bloom{background:var(--gold-soft);}
-  .leaf-toggle.big{width:44px; height:44px; font-size:20px;}
-  .popover-toggle-row{display:flex; justify-content:center; margin:14px 0;}
-  .node-row{display:flex; align-items:center; gap:6px;}
-  .node-actions{display:flex; gap:4px; margin-top:2px; flex-wrap:wrap; justify-content:center;}
-  .mini-btn{font-family:"Avenir Next",sans-serif; font-size:11px; border:none; background:var(--bg-alt);
-    color:var(--ink-soft); border-radius:6px; padding:5px 8px; cursor:pointer; min-height:28px;}
-  .mini-btn:hover{background:var(--gold-soft); color:var(--pine);}
-  .mini-btn.danger:hover{background:var(--rust); color:#fff;}
-  .node-card.root .mini-btn{background:rgba(255,255,255,.18); color:#F7F1E5;}
 
-  .inline-form{display:flex; gap:4px; margin-top:6px;}
-  .inline-form input{font-family:inherit; font-size:16px; border:1px solid var(--line); border-radius:8px;
-    padding:6px 8px; width:130px;}
-  .inline-form button{font-family:"Avenir Next",sans-serif; font-size:12px; border:none; background:var(--pine);
-    color:var(--paper); border-radius:8px; padding:6px 10px; cursor:pointer;}
+  .node-toggle-row{display:flex; justify-content:center;}
+  .leaf-toggle{width:34px; height:34px; border-radius:50%; border:none; background:var(--bg-alt);
+    font-size:17px; display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none;}
+  .leaf-toggle.bloom{background:var(--gold-soft);}
+
+  /* Icon row: three 30px hit targets + gaps fit inside the 160px card on one line. */
+  .node-actions{display:flex; gap:6px; justify-content:center; flex-wrap:nowrap;}
+  .icon-act{width:30px; height:30px; flex:none; border:none; border-radius:8px; background:var(--bg-alt);
+    font-size:14px; line-height:1; display:flex; align-items:center; justify-content:center; cursor:pointer;}
+  .icon-act:hover{background:var(--gold-soft);}
+  .icon-act:focus-visible{outline:2px solid var(--gold); outline-offset:1px;}
+  .node-card.root .icon-act{background:rgba(255,255,255,.18);}
+  /* armed delete: one more press on the same trash confirms, Esc backs out */
+  .icon-act.danger-armed{background:var(--rust);}
+
+  /* Sits under the card as its own block: never inflates the card, always travels with
+     the node because it lives in the same wrapper inside #tree-canvas. */
+  .add-panel{display:flex; gap:6px; align-items:center; background:var(--paper);
+    border:1.5px dashed var(--gold); border-radius:12px; padding:8px; width:160px; box-shadow:var(--shadow);}
+  .add-panel input{flex:1; min-width:0; font-family:inherit; font-size:16px; /* <16px makes iOS zoom on focus */
+    border:1px solid var(--line); border-radius:8px; padding:6px 8px; background:var(--bg); color:var(--ink);}
+  .add-panel button{flex:none; width:32px; height:32px; border:none; border-radius:8px; background:var(--pine);
+    color:var(--paper); font-size:16px; line-height:1; cursor:pointer;}
 
   /* ---------- stats ---------- */
   .stats-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
@@ -216,6 +227,10 @@
   .modal.center{border-radius:20px; margin-bottom:auto; margin-top:auto;}
   .modal h2{margin:0 0 4px; font-size:18px; color:var(--pine);}
   .modal p.hint{margin:0 0 14px; font-size:12.5px; color:var(--ink-soft); font-family:"Avenir Next",sans-serif;}
+  .modal.reminder{text-align:center;}
+  /* anywhere-wrap so a long single-word task name can't push the dialog wider than the screen */
+  .modal.reminder .reminder-topic{margin:10px 0 0; font-size:15px; font-style:italic; color:var(--pine);
+    overflow-wrap:anywhere;}
   .modal label{display:block; font-family:"Avenir Next",sans-serif; font-size:11px; text-transform:uppercase;
     letter-spacing:.05em; color:var(--ink-soft); margin:14px 0 5px;}
   .modal input, .modal textarea{width:100%; font-family:inherit; font-size:16px; border:1px solid var(--line);
@@ -281,15 +296,6 @@ function ringFlame(pct){
   <path d="M17 9c-1 2.6-3.8 4-3.8 7.6a3.8 3.8 0 0 0 7.6 0c0-1.3-.6-2.2-1.2-3 .2 1.2-.4 2-1.1 2-.9 0-1.2-.8-1-1.6.3-1.2-.2-3-.5-5z" fill="var(--gold)"/>
 </svg>`;
 }
-function branchDotRing(pct){
-  const p = Math.min(100,pct);
-  const color = p>=100 ? 'var(--pine)' : (p>0 ? 'var(--gold)' : 'var(--line)');
-  return `<svg viewBox="0 0 28 28" class="branch-dot-svg">
-  <circle cx="14" cy="14" r="11" fill="var(--paper)" stroke="var(--line)" stroke-width="2"/>
-  <circle cx="14" cy="14" r="11" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round"
-    stroke-dasharray="${p*0.6912} 999" transform="rotate(-90 14 14)"/>
-</svg>`;
-}
 function ringProgress(pct,cls){
   return `<svg viewBox="0 0 60 60" class="${cls||'ring-big'}">
   <circle cx="30" cy="30" r="25" fill="none" stroke="var(--bg-alt)" stroke-width="5"/>
@@ -310,7 +316,8 @@ let MODAL = null;            // 'newtree' | null
 let WIZ_STEP = 1;
 let WIZ_DRAFT = null;
 let CONGRATS_TREE = null;    // tree id currently showing congrats overlay
-let NODE_POPOVER = null;     // {treeId, nodeId, mode:'view'|'edit'} node currently open in the detail popover
+let REMINDER = null;         // {treeId, nodeId} task that just got ticked, showing the "write it down" nudge
+let NODE_POPOVER = null;     // {treeId, nodeId} node currently open in the edit popover
 let TREE_ZOOM = {scale:1, x:0, y:0}; // pan/zoom state for the tree canvas, reset whenever a tree is (re)opened
 let TREE_ZOOM_READY = false; // whether the initial centering pass has run for the currently open tree
 let TREE_CANVAS_W = 0;       // canvas width from the last renderTreeCanvas(), cached so the
@@ -341,7 +348,16 @@ function daysBetween(a,b){
   return Number.isFinite(diff) ? Math.round(diff) : 0;
 }
 
-function defaultSettings(){ return { theme:'auto', sound:false, notifications:false }; }
+function defaultSettings(){ return { theme:'auto', sound:false, notifications:false, taskReminder:true }; }
+
+// Settings added after launch default to ON, so saves written before they existed (where
+// the key is simply absent) must read as enabled rather than disabled. Everything else
+// keeps the original "absent = off" meaning.
+const SETTINGS_DEFAULT_ON = ['taskReminder'];
+function settingEnabled(key){
+  const v = DATA.settings ? DATA.settings[key] : undefined;
+  return SETTINGS_DEFAULT_ON.includes(key) ? v !== false : !!v;
+}
 
 function defaultData(){
   return {
@@ -381,6 +397,7 @@ function load(){
   applyTheme();
   render();
   startDayWatcher();
+  startEscHandler();
 }
 /* The "start point" concept was removed: trees still carrying a leftover corner
    node get it dissolved, with its children promoted to be root's direct children. */
@@ -450,6 +467,21 @@ function startDayWatcher(){
   const recheck = ()=>{ if(!document.hidden && applyDayRolloverIfNeeded()) arm(); };
   document.addEventListener('visibilitychange', recheck);
   window.addEventListener('focus', recheck);
+}
+
+// Bound once for the page's lifetime — render() replaces #app.innerHTML, so anything
+// re-bound per render would stack up duplicates. Esc backs out of whichever transient
+// state is open: the add-branch panel, an armed delete, or the edit popover.
+let ESC_BOUND = false;
+function startEscHandler(){
+  if(ESC_BOUND) return;
+  ESC_BOUND = true;
+  document.addEventListener('keydown',(e)=>{
+    if(e.key!=='Escape') return;
+    if(!OPEN_FORM && !PENDING_DELETE && !NODE_POPOVER && !REMINDER) return;
+    OPEN_FORM = null; PENDING_DELETE = null; NODE_POPOVER = null; REMINDER = null;
+    render();
+  });
 }
 function recordActivity(){
   const s = DATA.streak; const today = todayISO();
@@ -538,19 +570,30 @@ function actionToggle(treeId,nodeId){
   const tree = findTree(treeId); const node = findNode(tree.root,nodeId); const s = DATA.streak;
   const before = progressOf(tree,tree.root); const pctBefore = before.total ? before.done/before.total*100 : 0;
 
+  let justCompleted = false; // ticking ON only; unticking goes through the same function
   if(treeId==='daily'){
     const wasDone = isDoneToday(node);
     node.completedDate = wasDone ? null : todayISO();
+    justCompleted = !wasDone;
     if(!wasDone){ s.totalCompleted++; recordActivity(); } else s.totalCompleted = Math.max(0,s.totalCompleted-1);
   }else{
     node.completed = !node.completed;
+    justCompleted = node.completed;
     if(node.completed){ s.totalCompleted++; recordActivity(); } else s.totalCompleted = Math.max(0,s.totalCompleted-1);
   }
   tree.lastActivity = todayISO();
 
   const after = progressOf(tree,tree.root); const pctAfter = after.total ? after.done/after.total*100 : 0;
   save();
-  if(!tree.isDaily && pctBefore<100 && pctAfter>=100 && after.total>0){ CONGRATS_TREE = treeId; }
+  const treeJustFinished = !tree.isDaily && pctBefore<100 && pctAfter>=100 && after.total>0;
+  if(treeJustFinished) CONGRATS_TREE = treeId;
+  // The nudge is for a real task in a normal tree. Daily habits ("drink water") have no
+  // topic to write up and would nag every day. When this tick also finished the tree we
+  // deliberately drop the reminder instead of queueing it: two overlays at once is wrong,
+  // and on a completed tree the congrats card is the only thing worth showing.
+  if(justCompleted && !treeJustFinished && !tree.isDaily && node.id!==tree.root.id && settingEnabled('taskReminder')){
+    REMINDER = {treeId, nodeId};
+  }
   render();
 }
 function actionResetAll(){
@@ -558,10 +601,10 @@ function actionResetAll(){
 }
 
 /* ============ VIEW NAV ============ */
-function openTree(id){ CURRENT_TREE=id; VIEW='tree'; OPEN_FORM=null; PENDING_DELETE=null; NODE_POPOVER=null; TREE_ZOOM={scale:1,x:0,y:0}; TREE_ZOOM_READY=false; render(); }
-function goHome(){ VIEW='home'; CURRENT_TREE=null; NODE_POPOVER=null; render(); }
-function goStats(){ VIEW='stats'; render(); }
-function goSettings(){ VIEW='settings'; render(); }
+function openTree(id){ CURRENT_TREE=id; VIEW='tree'; OPEN_FORM=null; PENDING_DELETE=null; NODE_POPOVER=null; REMINDER=null; TREE_ZOOM={scale:1,x:0,y:0}; TREE_ZOOM_READY=false; render(); }
+function goHome(){ VIEW='home'; CURRENT_TREE=null; NODE_POPOVER=null; REMINDER=null; render(); }
+function goStats(){ VIEW='stats'; REMINDER=null; render(); }
+function goSettings(){ VIEW='settings'; REMINDER=null; render(); }
 
 /* ============ RENDER ============ */
 function render(){
@@ -573,6 +616,7 @@ function render(){
     renderBottomNav() +
     (MODAL ? renderModal() : '') +
     (NODE_POPOVER ? renderNodePopover() : '') +
+    (REMINDER ? renderReminder() : '') +
     (CONGRATS_TREE ? renderCongrats() : '');
   bindEvents();
 }
@@ -652,13 +696,6 @@ function renderTreeView(){
   </div>`;
 }
 
-// Any node with children (branch) collapses into a dot, regardless of depth —
-// there's nothing left to reveal in a leaf, so leaves always show as full cards.
-// Root and daily-tree nodes always render as full cards too.
-function shouldCollapse(tree,isRoot,node){
-  return !isRoot && !tree.isDaily && node.children.length>0;
-}
-
 // Layout pass (Reingold-Tilford-lite, no DOM measurement): every leaf gets the next
 // free x slot, every parent's x is the average of its children's, so subtrees never
 // overlap and a linear chain stays on one straight column. A node with a saved
@@ -667,11 +704,10 @@ function shouldCollapse(tree,isRoot,node){
 // rather than leaving a gap. row 0 = root, row 1 = root's children, etc. — rows only
 // drive the fallback y for auto-positioned nodes; a dragged node can sit anywhere.
 function computeTreeLayout(tree){
-  const layout = new Map(); // nodeId -> {x, row, collapsed, posY}
+  const layout = new Map(); // nodeId -> {x, row, posY}
   let nextX = 0;
 
   function visit(node,isRoot,row){
-    const collapsed = shouldCollapse(tree,isRoot,node);
     let x;
     if(node.children.length===0){
       if(node.pos) x = node.pos.x;
@@ -681,101 +717,90 @@ function computeTreeLayout(tree){
       const autoX = childXs.reduce((a,b)=>a+b,0)/childXs.length;
       x = node.pos ? node.pos.x : autoX;
     }
-    layout.set(node.id,{x,row,collapsed,posY:node.pos?node.pos.y:null});
+    layout.set(node.id,{x,row,posY:node.pos?node.pos.y:null});
     return x;
   }
   visit(tree.root,true,0);
 
-  const rowHasCard = new Map();
+  // Every node is a card now, so the row pitch is a single constant.
   for(const pos of layout.values()){
-    if(!pos.collapsed) rowHasCard.set(pos.row, true);
-    else if(!rowHasCard.has(pos.row)) rowHasCard.set(pos.row, false);
-  }
-  const maxRow = Math.max(...[...layout.values()].map(p=>p.row));
-  const rowTop = [0];
-  for(let r=0;r<=maxRow;r++){
-    rowTop[r+1] = rowTop[r] + (rowHasCard.get(r) ? TREE_CARD_ROW_STEP : TREE_DOT_ROW_STEP);
-  }
-  for(const pos of layout.values()){
-    pos.y = pos.posY!==null ? pos.posY : rowTop[pos.row];
+    pos.y = pos.posY!==null ? pos.posY : pos.row*TREE_CARD_ROW_STEP;
   }
   return layout;
 }
 
-// Shared by the full node-card and the node popover so both expose the same actions.
+// Icon-only action row. Every icon carries title + aria-label because a bare pictogram
+// tells a screen reader nothing, and the boxes are 30px so they stay tappable on a phone.
 function renderNodeActionsRow(tree,node,isRoot){
   const isDaily = tree.isDaily;
-  const canAddChild = isDaily ? isRoot : true;
   const canDelete = !isRoot;
-  const showChildInput = OPEN_FORM===node.id;
-  const showConfirm = PENDING_DELETE===node.id;
+  const armed = PENDING_DELETE===node.id;
+  // Nested daily tasks are allowed now, so every node can grow children; only the wording
+  // differs, since the daily root collects "задания" rather than "ветки".
+  const addLabel = isRoot && isDaily ? 'Добавить задание' : 'Добавить ветку';
 
-  const actions = [`<button class="mini-btn" data-editnode="${tree.id}|${node.id}">✎ ред.</button>`];
-  if(canAddChild) actions.push(`<button class="mini-btn" data-addform="${node.id}">+ ${isRoot&&isDaily?'задание':'ветка'}</button>`);
+  const actions = [
+    `<button type="button" class="icon-act" data-editnode="${tree.id}|${node.id}" title="Редактировать" aria-label="Редактировать">✏️</button>`,
+    `<button type="button" class="icon-act" data-addform="${node.id}" title="${addLabel}" aria-label="${addLabel}">➕</button>`
+  ];
   if(canDelete){
-    if(showConfirm){
-      actions.push(`<button class="mini-btn danger" data-confirmdel="${tree.id}|${node.id}">удалить?</button>`);
-      actions.push(`<button class="mini-btn" data-canceldel="1">×</button>`);
-    }else actions.push(`<button class="mini-btn danger" data-askdel="${node.id}">убрать</button>`);
+    actions.push(armed
+      ? `<button type="button" class="icon-act danger-armed" data-confirmdel="${tree.id}|${node.id}" title="Нажмите ещё раз, чтобы удалить" aria-label="Подтвердить удаление">🗑️</button>`
+      : `<button type="button" class="icon-act" data-askdel="${node.id}" title="Удалить" aria-label="Удалить">🗑️</button>`);
   }
-  let html = `<div class="node-actions">${actions.join('')}</div>`;
-  if(showChildInput){
-    html += `<form class="inline-form" data-addchild="${tree.id}|${node.id}">
-      <input type="text" autofocus placeholder="${isDaily?'например, выпить воду':'например, Математика'}" required>
-      <button type="submit">+</button></form>`;
-  }
-  return html;
+  return `<div class="node-actions">${actions.join('')}</div>`;
 }
 
+// Card contents, top to bottom, all centred: title, optional description, optional
+// progress, the completion flower on its own row, then the icon row.
 function renderNodeCard(tree,node,isRoot){
-  const checkable = !isRoot; // every real node gets its own checkbox, branch or leaf
+  const checkable = !isRoot; // root is the goal itself: nothing to tick, nothing to delete
   const done = isNodeDone(tree,node);
   const hasChildren = node.children.length>0;
   const prog = hasChildren ? progressOf(tree,node) : null;
-  const editing = OPEN_FORM===node.id || PENDING_DELETE===node.id;
   const rootStyle = isRoot ? `style="background:${COLORS[tree.color||'green']};border-color:${COLORS[tree.color||'green']}"` : '';
 
-  let inner = `<div class="node-card ${isRoot?'root':'task'} ${done&&checkable?'done':''} ${editing?'editing':''}" ${rootStyle}>`;
-  inner += `<div class="node-row">`;
-  if(checkable) inner += `<button type="button" class="leaf-toggle ${done?'bloom':''}" data-toggle="${tree.id}|${node.id}">${done?'🌸':'🍃'}</button>`;
-  inner += `<div class="node-text">${esc(node.text)}</div></div>`;
+  let inner = `<div class="node-card ${isRoot?'root':'task'} ${done&&checkable?'done':''}" ${rootStyle}>`;
+  inner += `<div class="node-title" title="${esc(node.text)}">${esc(node.text)}</div>`;
+  // omitted entirely when absent, so a description-less card leaves no empty band
+  if(node.description) inner += `<div class="node-desc" title="${esc(node.description)}">${esc(node.description)}</div>`;
   if(prog && prog.total>0) inner += `<div class="node-progress">${prog.done}/${prog.total}</div>`;
+  if(checkable) inner += `<div class="node-toggle-row"><button type="button" class="leaf-toggle ${done?'bloom':''}" data-toggle="${tree.id}|${node.id}" title="${done?'Снять отметку':'Отметить выполненным'}" aria-label="${done?'Снять отметку':'Отметить выполненным'}">${done?'🌸':'🍃'}</button></div>`;
   inner += renderNodeActionsRow(tree,node,isRoot);
   inner += `</div>`;
   return inner;
 }
 
-// Collapsed representation: a branch (has children) shows a progress ring, a leaf
-// (no children) shows a plain dot that just switches color when marked done.
-function renderNodeDot(tree,node){
-  const hasChildren = node.children.length>0;
-  if(hasChildren){
-    const prog = progressOf(tree,node);
-    const pct = prog.total ? Math.round(prog.done/prog.total*100) : 0;
-    return `<button type="button" class="node-dot branch" data-opennodepop="${tree.id}|${node.id}" title="${esc(node.text)}">${branchDotRing(pct)}</button>`;
-  }
-  const done = isNodeDone(tree,node);
-  return `<button type="button" class="node-dot leaf ${done?'done':''}" data-opennodepop="${tree.id}|${node.id}" title="${esc(node.text)}"><span class="dot-fill"></span></button>`;
+// Separate block below the card — deliberately a sibling of .node-card, not a child, so
+// opening it can never change the card's own height (which the edge anchors depend on).
+function renderAddPanel(tree,node){
+  const isDaily = tree.isDaily;
+  return `<form class="add-panel" data-addchild="${tree.id}|${node.id}">
+    <input type="text" id="add-branch-input" placeholder="${isDaily?'например, выпить воду':'например, Математика'}"
+      aria-label="Название новой ветки" required>
+    <button type="submit" title="Добавить" aria-label="Добавить">↵</button>
+  </form>`;
 }
 
-const TREE_COL_WIDTH = 160;   // horizontal slot per column; card is 130px, leaves a gutter
-const TREE_CARD_ROW_STEP = 190; // vertical step for a row containing at least one full card
-const TREE_DOT_ROW_STEP = 70;   // vertical step for a row that is entirely collapsed dots
-const TREE_DOT_H = 28;          // dot's exact height, same as its CSS box
-const TREE_CARD_MAX_H = 190;    // generous upper bound on card height; only used to size the
-                                // canvas, where overshooting just adds harmless slack
+// Card box is 160 wide; +30 of gutter keeps neighbouring cards visibly apart.
+const TREE_COL_WIDTH = 190;
+// Tallest a card can get, from its CSS: 20 padding + 3 border + 2 title lines (36) +
+// 3 clamped description lines (47) + progress (12) + flower row (34) + icon row (30) +
+// 4 gaps of 5 (20) ≈ 202. Both line clamps are what make this an actual ceiling.
+const TREE_CARD_MAX_H = 210;
+// Row pitch = that ceiling plus ~50 of breathing room for the connecting curve.
+const TREE_CARD_ROW_STEP = 250;
 
-// Edges anchor at a point INSIDE the node box rather than at its bottom/top edge. Real
-// card height varies with content (root vs task, progress row, wrapped buttons, an open
-// edit form), so any single height constant is wrong for most nodes — the old 150 was
-// ~10px taller than real cards, which is why lines appeared to start in empty space
-// below them. The line layer sits under the (opaque) nodes, so whatever runs beneath a
-// node is hidden and the edge visually starts exactly at its true border, at any height
-// and without measuring the DOM. These must stay UNDER-estimates: too small only hides
-// more of the line, too large exposes the gap again.
-const TREE_CARD_ANCHOR_INSET = 40;
-const TREE_DOT_ANCHOR_INSET = TREE_DOT_H/2;
-function nodeAnchorY(top,isDot){ return top + (isDot ? TREE_DOT_ANCHOR_INSET : TREE_CARD_ANCHOR_INSET); }
+// Edges anchor at a point INSIDE the card rather than at its bottom edge. Card height
+// still varies with content (root vs task, description present or not), so any single
+// height constant would be wrong for most nodes — an over-estimate is exactly what used
+// to leave lines starting in empty space below the card. The line layer sits under the
+// (opaque) cards, so whatever runs beneath one is hidden and the edge visually starts at
+// its true border, at any height and without measuring the DOM. This must stay an
+// UNDER-estimate: the shortest possible card (root, one-line title, no description) is
+// ~76px tall, so 34 is safely inside every card.
+const TREE_CARD_ANCHOR_INSET = 34;
+function nodeAnchorY(top){ return top + TREE_CARD_ANCHOR_INSET; }
 
 const TREE_PAD = 50; // margin around the tree's bounding box so nothing hugs the canvas edge
 
@@ -803,16 +828,15 @@ function renderTreeCanvas(tree){
 
   let minX=Infinity, maxX=-Infinity, minY=Infinity, maxY=-Infinity;
   for(const pos of layout.values()){
-    const h = pos.collapsed ? TREE_DOT_H : TREE_CARD_MAX_H;
     minX = Math.min(minX, pos.x-TREE_COL_WIDTH/2); maxX = Math.max(maxX, pos.x+TREE_COL_WIDTH/2);
-    minY = Math.min(minY, pos.y); maxY = Math.max(maxY, pos.y+h);
+    minY = Math.min(minY, pos.y); maxY = Math.max(maxY, pos.y+TREE_CARD_MAX_H);
   }
   const offX = TREE_PAD - minX, offY = TREE_PAD - minY;
   const width = maxX-minX+TREE_PAD*2, height = maxY-minY+TREE_PAD*2;
 
   const cx = (pos)=> pos.x+offX;
   const topY = (pos)=> pos.y+offY;
-  const anchorY = (pos)=> nodeAnchorY(topY(pos), pos.collapsed);
+  const anchorY = (pos)=> nodeAnchorY(topY(pos));
 
   let items = '';
   let lines = '';
@@ -820,8 +844,9 @@ function renderTreeCanvas(tree){
     const pos = layout.get(node.id);
     const left = cx(pos) - TREE_COL_WIDTH/2;
     const top = topY(pos);
-    const inner = pos.collapsed ? renderNodeDot(tree,node) : renderNodeCard(tree,node,isRoot);
-    items += `<div class="node-pos${isRoot?'':' node-draggable'}" data-nodeid="${node.id}" data-rawx="${pos.x}" data-rawy="${pos.y}" style="left:${left}px; top:${top}px; width:${TREE_COL_WIDTH}px;">${inner}</div>`;
+    const panelOpen = OPEN_FORM===node.id;
+    const inner = renderNodeCard(tree,node,isRoot) + (panelOpen ? renderAddPanel(tree,node) : '');
+    items += `<div class="node-pos${isRoot?'':' node-draggable'}${panelOpen?' has-panel':''}" data-nodeid="${node.id}" data-rawx="${pos.x}" data-rawy="${pos.y}" style="left:${left}px; top:${top}px; width:${TREE_COL_WIDTH}px;">${inner}</div>`;
     node.children.forEach(c=>{
       const cpos = layout.get(c.id);
       const x1=cx(pos), y1=anchorY(pos), x2=cx(cpos), y2=anchorY(cpos);
@@ -877,6 +902,7 @@ function renderSettingsView(){
     </div>
   </div>
   <div class="settings-group">
+    ${switchRow('taskReminder','Напоминать записать тему', settingEnabled('taskReminder'))}
     ${switchRow('sound','Звуковые эффекты', !!st.sound)}
     ${switchRow('notifications','Напоминания', !!st.notifications)}
   </div>
@@ -924,34 +950,14 @@ function renderModal(){
   return '';
 }
 
-/* ---- node detail popover: view (name/description/progress/checkbox/actions) + edit sub-view ---- */
+/* ---- node edit popover. Every node is a full card now, so name/description/progress and
+   all the actions are already on the card itself — the popover is only needed for editing
+   the two text fields, which don't fit inline. ---- */
 function renderNodePopover(){
-  const {treeId,nodeId,mode} = NODE_POPOVER;
+  const {treeId,nodeId} = NODE_POPOVER;
   const tree = findTree(treeId); const node = tree && findNode(tree.root,nodeId);
   if(!tree || !node){ NODE_POPOVER=null; return ''; }
-  const isRoot = tree.root.id===node.id;
-  const body = mode==='edit' ? renderNodeEditForm(node) : renderNodeViewBody(tree,node,isRoot);
-  return `<div class="overlay" data-close-nodepop="1"><div class="modal center" data-stop="1">${body}</div></div>`;
-}
-
-function renderNodeViewBody(tree,node,isRoot){
-  const checkable = !isRoot;
-  const done = isNodeDone(tree,node);
-  const hasChildren = node.children.length>0;
-  const prog = hasChildren ? progressOf(tree,node) : null;
-  const pct = prog && prog.total ? Math.round(prog.done/prog.total*100) : 0;
-  return `
-    <h2>${esc(node.text)}</h2>
-    ${node.description ? `<p class="hint">${esc(node.description)}</p>` : ''}
-    ${hasChildren ? `
-      <div class="meta-row"><span>${prog.done}/${prog.total} веток</span><span>${pct}%</span></div>
-      <div class="bar"><i style="width:${pct}%; background:linear-gradient(90deg, var(--pine), var(--gold))"></i></div>
-    ` : ''}
-    ${checkable ? `<div class="popover-toggle-row">
-      <button type="button" class="leaf-toggle big ${done?'bloom':''}" data-toggle="${tree.id}|${node.id}">${done?'🌸':'🍃'}</button>
-    </div>` : ''}
-    ${renderNodeActionsRow(tree,node,isRoot)}
-    <div class="modal-actions"><button class="btn ghost block" data-close-nodepop="1">Закрыть</button></div>`;
+  return `<div class="overlay" data-close-nodepop="1"><div class="modal center" data-stop="1">${renderNodeEditForm(node)}</div></div>`;
 }
 
 function renderNodeEditForm(node){
@@ -965,6 +971,19 @@ function renderNodeEditForm(node){
       <button class="btn ghost" data-close-nodepop="1">Отмена</button>
       <button class="btn primary" data-save-editnode="1">Сохранить</button>
     </div>`;
+}
+
+/* Nudge shown right after a task is ticked: capture what you know while it's fresh.
+   Reuses the node popover's overlay/modal shell rather than a third set of styles. */
+function renderReminder(){
+  const tree = findTree(REMINDER.treeId);
+  const node = tree && findNode(tree.root, REMINDER.nodeId);
+  if(!tree || !node){ REMINDER=null; return ''; } // node deleted meanwhile — stay silent
+  return `<div class="overlay" data-close-reminder="1"><div class="modal center reminder" data-stop="1">
+    <h2>Запиши всё, что знаешь об этой теме</h2>
+    <p class="reminder-topic">${esc(node.text)}</p>
+    <div class="modal-actions"><button class="btn primary block" data-close-reminder="1">Хорошо</button></div>
+  </div></div>`;
 }
 
 function renderCongrats(){
@@ -1010,11 +1029,14 @@ function bindEvents(){
   }));
   app.querySelectorAll('[data-toggle-setting]').forEach(el=>el.addEventListener('click',()=>{
     const key = el.dataset.toggleSetting;
-    DATA.settings[key] = !DATA.settings[key]; save(); render();
+    // Negate the EFFECTIVE value, not the raw one: for a default-on key that's still
+    // absent from an older save, `!undefined` would write `true` and the first tap would
+    // silently do nothing. Behaviour for the default-off keys is unchanged.
+    DATA.settings[key] = !settingEnabled(key); save(); render();
   }));
-  app.querySelectorAll('[data-addform]').forEach(el=>el.addEventListener('click',()=>{ OPEN_FORM=el.dataset.addform; render(); }));
-  app.querySelectorAll('[data-askdel]').forEach(el=>el.addEventListener('click',()=>{ PENDING_DELETE=el.dataset.askdel; render(); }));
-  app.querySelectorAll('[data-canceldel]').forEach(el=>el.addEventListener('click',()=>{ PENDING_DELETE=null; render(); }));
+  // Opening the add panel clears any armed delete, so the two never sit armed at once.
+  app.querySelectorAll('[data-addform]').forEach(el=>el.addEventListener('click',()=>{ OPEN_FORM=el.dataset.addform; PENDING_DELETE=null; render(); }));
+  app.querySelectorAll('[data-askdel]').forEach(el=>el.addEventListener('click',()=>{ PENDING_DELETE=el.dataset.askdel; OPEN_FORM=null; render(); }));
   app.querySelectorAll('[data-confirmdel]').forEach(el=>el.addEventListener('click',()=>{
     const [tid,nid]=el.dataset.confirmdel.split('|'); actionDeleteNode(tid,nid);
   }));
@@ -1022,11 +1044,11 @@ function bindEvents(){
     e.preventDefault(); const [tid,nid]=el.dataset.addchild.split('|'); const val=el.querySelector('input').value;
     if(val.trim()) actionAddNode(tid,nid,val);
   }));
+  // autofocus doesn't fire reliably on an element injected via innerHTML, so focus here.
+  const addInput = app.querySelector('#add-branch-input');
+  if(addInput){ addInput.focus(); addInput.select(); }
   app.querySelectorAll('[data-editnode]').forEach(el=>el.addEventListener('click',()=>{
-    const [tid,nid]=el.dataset.editnode.split('|'); NODE_POPOVER={treeId:tid,nodeId:nid,mode:'edit'}; render();
-  }));
-  app.querySelectorAll('[data-opennodepop]').forEach(el=>el.addEventListener('click',()=>{
-    const [tid,nid]=el.dataset.opennodepop.split('|'); NODE_POPOVER={treeId:tid,nodeId:nid,mode:'view'}; render();
+    const [tid,nid]=el.dataset.editnode.split('|'); NODE_POPOVER={treeId:tid,nodeId:nid}; render();
   }));
   app.querySelectorAll('[data-close-nodepop]').forEach(el=>el.addEventListener('click',(e)=>{
     if(e.target===el || el.tagName==='BUTTON'){ NODE_POPOVER=null; render(); }
@@ -1067,6 +1089,9 @@ function bindEvents(){
   if(createBtn) createBtn.addEventListener('click',()=>{ actionAddTree(WIZ_DRAFT); });
 
   /* congrats */
+  app.querySelectorAll('[data-close-reminder]').forEach(el=>el.addEventListener('click',(e)=>{
+    if(e.target===el || el.tagName==='BUTTON'){ REMINDER=null; render(); }
+  }));
   app.querySelectorAll('[data-close-congrats]').forEach(el=>el.addEventListener('click',(e)=>{
     if(e.target===el || el.tagName==='BUTTON'){ CONGRATS_TREE=null; render(); }
   }));
@@ -1183,7 +1208,7 @@ function bindNodeDrag(){
 }
 
 function onNodeDragStart(e){
-  if(e.target.closest('.mini-btn, .leaf-toggle, input, textarea, form')) return; // let those controls click normally
+  if(e.target.closest('.icon-act, .leaf-toggle, input, textarea, form')) return; // let those controls click normally
   const el = e.currentTarget;
   NODE_DRAG = {
     pointerId: e.pointerId, el, nodeId: el.dataset.nodeid,
@@ -1193,11 +1218,10 @@ function onNodeDragStart(e){
     dragging: false
   };
   // Pointer capture is deliberately NOT taken here. Capturing on pointerdown retargets
-  // the follow-up compatibility `click` to this element, so it never reaches the inner
-  // .node-dot button carrying data-opennodepop — which silently killed tap-to-open on
-  // dots. It's taken in onNodeDragMove instead, once we know this is really a drag.
-  // Listening on window (not el) means a fast pointer that outruns the node before the
-  // threshold is crossed still gets tracked.
+  // the follow-up compatibility `click` to this element, so it would never reach the
+  // buttons inside the card. It's taken in onNodeDragMove instead, once we know this is
+  // really a drag. Listening on window (not el) means a fast pointer that outruns the
+  // node before the threshold is crossed still gets tracked.
   window.addEventListener('pointermove', onNodeDragMove);
   window.addEventListener('pointerup', onNodeDragEnd);
   window.addEventListener('pointercancel', onNodeDragEnd);
@@ -1254,10 +1278,8 @@ function onNodeDragEnd(e){
 // parent (fixed at the parent's end) and the edges to its own children (fixed at each
 // child's end) — instead of rebuilding the whole line layer on every pointermove.
 function updateEdgesForNode(nodeId,left,top){
-  const el = document.querySelector(`.node-pos[data-nodeid="${nodeId}"]`);
-  const isDot = !!el.querySelector('.node-dot');
   const cxNode = left + TREE_COL_WIDTH/2;
-  const ayNode = nodeAnchorY(top, isDot); // same anchor rule renderTreeCanvas uses
+  const ayNode = nodeAnchorY(top); // same anchor rule renderTreeCanvas uses
 
   const incoming = document.querySelector(`.tree-lines path[data-to="${nodeId}"]`);
   if(incoming) incoming.setAttribute('d', bezierD(incoming.dataset.x1, incoming.dataset.y1, cxNode, ayNode));
