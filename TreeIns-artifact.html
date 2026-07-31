@@ -1,0 +1,1024 @@
+﻿<style>
+  :root{
+    --bg:#F7F1E5; --bg-alt:#EDE4D2; --paper:#FBF7EC; --ink:#23281F; --ink-soft:#63614f;
+    --pine:#2F4A3C; --pine-light:#4C6F5B; --gold:#C9932C; --gold-soft:#EAD199; --rust:#A6542A;
+    --line:#C9BC98; --shadow:0 2px 10px rgba(47,74,60,.08),0 1px 2px rgba(47,74,60,.10);
+    --safe-b: env(safe-area-inset-bottom, 0px);
+  }
+  html[data-theme="dark"]{
+    --bg:#121212; --bg-alt:#1A1A1A; --paper:#1E1E1E; --ink:#ECECEC; --ink-soft:#9C9C9C;
+    --pine:#6FAE93; --pine-light:#4F7A67; --gold:#E8C874; --gold-soft:#33301E; --rust:#D98A63;
+    --line:#333333; --shadow:0 4px 18px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.04);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(circle at 15% 25%, rgba(0,0,0,.025) 0, transparent 2px),
+      radial-gradient(circle at 65% 60%, rgba(0,0,0,.02) 0, transparent 2px),
+      var(--bg);
+    background-size:26px 26px, 34px 34px, auto;
+    color:var(--ink); font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+    min-height:100vh; font-size:16px; -webkit-text-size-adjust:100%;
+  }
+  html[data-theme="dark"] body{
+    background:
+      radial-gradient(1px 1px at 40% 30%, rgba(255,255,255,.06), transparent),
+      radial-gradient(1px 1px at 25% 60%, rgba(255,255,255,.05), transparent),
+      var(--bg);
+    background-size:100% 100%, 100% 100%, auto;
+  }
+
+  #app{max-width:460px; margin:0 auto; padding:16px 14px calc(84px + var(--safe-b)); min-height:100vh; position:relative; z-index:2;}
+
+  /* ---------- top bar ---------- */
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;position:sticky;top:0;
+    background:linear-gradient(var(--bg) 80%, transparent); padding:6px 0 8px; z-index:5;}
+  .brand{display:flex;align-items:center;gap:8px;}
+  .brand-mark{width:30px;height:30px;flex:none;}
+  html[data-theme="dark"] .brand-mark path{fill:#7FB7A3;}
+  html[data-theme="dark"] .brand-mark rect{fill:#C9932C;}
+  .brand h1{font-size:19px;margin:0;letter-spacing:.01em;font-weight:600;color:var(--pine);}
+  .topbar-right{display:flex;align-items:center;gap:8px;}
+  .icon-btn{background:var(--paper);border:1px solid var(--line);border-radius:12px;width:40px;height:40px;
+    display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;box-shadow:var(--shadow);}
+  .streak-pill{display:flex;align-items:center;gap:6px;background:var(--paper);border:1px solid var(--line);
+    border-radius:999px;padding:5px 12px 5px 6px;box-shadow:var(--shadow);cursor:pointer;}
+  .streak-pill .ring{width:26px;height:26px;}
+  .streak-pill .num{font-family:"Menlo","Consolas",monospace;font-size:15px;font-weight:600;color:var(--pine);}
+
+  /* ---------- bottom nav ---------- */
+  nav.tabs{position:fixed; left:0; right:0; bottom:0; display:flex; justify-content:center; z-index:20;
+    background:linear-gradient(transparent, var(--bg) 30%); padding-top:14px;}
+  nav.tabs .inner{max-width:460px; width:100%; margin:0 14px; background:var(--paper); border:1px solid var(--line);
+    border-radius:22px; display:flex; box-shadow:0 6px 20px rgba(0,0,0,.16); padding:6px; padding-bottom:calc(6px + var(--safe-b));}
+  nav.tabs button{flex:1; background:none; border:none; display:flex; flex-direction:column; align-items:center; gap:2px;
+    padding:8px 4px; border-radius:16px; cursor:pointer; color:var(--ink-soft); font-family:"Avenir Next","Segoe UI",sans-serif;}
+  nav.tabs button .ic{font-size:19px;}
+  nav.tabs button .t{font-size:10px; letter-spacing:.04em; text-transform:uppercase;}
+  nav.tabs button.active{color:var(--pine); background:var(--gold-soft);}
+  nav.tabs button.active .ic{transform:translateY(-1px) scale(1.1);}
+
+  /* ---------- home / cards ---------- */
+  .list{display:flex; flex-direction:column; gap:12px;}
+  .card{background:var(--paper); border:1px solid var(--line); border-radius:26px 30px 24px 30px; padding:16px;
+    box-shadow:var(--shadow); position:relative; display:flex; gap:12px; align-items:flex-start; cursor:pointer;}
+  .card .accent{width:5px; align-self:stretch; border-radius:4px; flex:none;}
+  .card .body{flex:1; min-width:0;}
+  .card .sprigs{font-size:10px; letter-spacing:2px; margin-bottom:2px; opacity:.8;}
+  .card .row1{display:flex; align-items:center; gap:8px;}
+  .card .stage-emoji{font-size:24px; flex:none; filter:drop-shadow(0 1px 1px rgba(0,0,0,.08));}
+  .card .stage-emoji.glow{filter:drop-shadow(0 0 8px var(--gold));}
+  .card h3{margin:0; font-size:16px; color:var(--pine); line-height:1.25;}
+  .card p.goal{margin:2px 0 0; font-size:12.5px; color:var(--ink-soft); font-style:italic;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .card .meta-row{display:flex; justify-content:space-between; align-items:center; margin-top:8px;
+    font-family:"Avenir Next","Segoe UI",sans-serif; font-size:11px; color:var(--ink-soft);}
+  .card .bar{height:6px; background:var(--bg-alt); border-radius:3px; overflow:hidden; margin-top:6px;}
+  .card .bar i{display:block; height:100%;}
+  .card .del{position:absolute; top:10px; right:10px; background:none; border:none; color:var(--ink-soft);
+    font-size:13px; cursor:pointer; opacity:.4; padding:6px;}
+  .card .del:hover{opacity:1; color:var(--rust);}
+  .add-card{display:flex; align-items:center; justify-content:center; gap:8px; border-style:dashed;
+    color:var(--ink-soft); padding:18px; font-family:"Avenir Next",sans-serif; font-size:14px;}
+  .add-card .plus{font-size:22px; color:var(--gold);}
+
+  /* ---------- tree view ---------- */
+  .back-btn{font-family:"Avenir Next","Segoe UI",sans-serif; font-size:12px; letter-spacing:.05em; text-transform:uppercase;
+    color:var(--ink-soft); background:none; border:none; cursor:pointer; padding:8px 0; display:flex; align-items:center; gap:4px;}
+  .tree-title-block{display:flex; align-items:center; gap:10px; margin:4px 0 4px;}
+  .tree-title-block .stage-emoji{font-size:30px;}
+  .tree-title-block h2{margin:0; font-size:19px; color:var(--pine);}
+  .tree-goal-line{font-size:13px; font-style:italic; color:var(--ink-soft); margin:0 0 14px;}
+
+  .tree-scroll{overflow:hidden; position:relative; padding:8px 0 24px; height:60vh; min-height:340px;
+    touch-action:none; -webkit-user-select:none; user-select:none;}
+  .tree-zoom-controls{position:absolute; right:10px; bottom:10px; z-index:10; display:flex; flex-direction:column; gap:6px;}
+  .zoom-btn{width:36px; height:36px; border-radius:10px; border:1px solid var(--line); background:var(--paper);
+    color:var(--pine); font-size:18px; line-height:1; cursor:pointer; box-shadow:var(--shadow);
+    display:flex; align-items:center; justify-content:center; font-family:"Avenir Next",sans-serif;}
+  .zoom-btn:hover{background:var(--gold-soft);}
+  /* absolute-position layout grid: node coordinates come from computeTreeLayout(),
+     not from DOM flow, so alignment can't drift with content width/height. */
+  .tree{transform-origin:top center; position:relative; margin:0 auto;}
+  .node-pos{position:absolute; display:flex; justify-content:center; z-index:1;}
+  .tree-lines{position:absolute; inset:0; z-index:0; pointer-events:none; overflow:visible;}
+  .tree-lines line{stroke:var(--line); stroke-width:2;}
+
+  .node-card{display:inline-flex; flex-direction:column; align-items:center; gap:4px; background:var(--paper);
+    border:1.5px solid var(--pine-light); border-radius:12px; padding:9px 12px; width:130px;
+    box-shadow:var(--shadow); position:relative; z-index:1;}
+  .node-card.root{color:#F7F1E5;}
+  .node-card.task{border-color:var(--line);}
+  .node-card.task.done{background:var(--gold-soft); border-color:var(--gold);}
+  .node-card.editing{z-index:5;} /* an open inline add/edit form may grow taller than its row slot */
+
+  /* collapsed intermediate/leaf nodes: fixed-size dot instead of a full card */
+  .node-dot{border:none; background:none; cursor:pointer; padding:4px; margin:0 auto;
+    display:flex; align-items:center; justify-content:center; width:28px; height:28px;}
+  .node-dot.branch svg{display:block; width:28px; height:28px;}
+  .node-dot.leaf .dot-fill{width:14px; height:14px; border-radius:50%; background:var(--paper);
+    border:2px solid var(--line); display:block;}
+  .node-dot.leaf.done .dot-fill{background:var(--pine); border-color:var(--pine);}
+
+  .node-text{font-size:13px; line-height:1.3; max-width:130px;}
+  .node-card.root .node-text{font-size:14.5px; font-weight:600;}
+  .node-progress{font-family:"Menlo",monospace; font-size:10px; color:var(--ink-soft);}
+  .node-card.root .node-progress{color:rgba(247,241,229,.75);}
+  .leaf-toggle{width:26px; height:26px; border-radius:50%; border:none; background:var(--bg-alt);
+    font-size:14px; display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none;}
+  .leaf-toggle.bloom{background:var(--gold-soft);}
+  .leaf-toggle.big{width:44px; height:44px; font-size:20px;}
+  .popover-toggle-row{display:flex; justify-content:center; margin:14px 0;}
+  .node-row{display:flex; align-items:center; gap:6px;}
+  .node-actions{display:flex; gap:4px; margin-top:2px; flex-wrap:wrap; justify-content:center;}
+  .mini-btn{font-family:"Avenir Next",sans-serif; font-size:11px; border:none; background:var(--bg-alt);
+    color:var(--ink-soft); border-radius:6px; padding:5px 8px; cursor:pointer; min-height:28px;}
+  .mini-btn:hover{background:var(--gold-soft); color:var(--pine);}
+  .mini-btn.danger:hover{background:var(--rust); color:#fff;}
+  .node-card.root .mini-btn{background:rgba(255,255,255,.18); color:#F7F1E5;}
+
+  .inline-form{display:flex; gap:4px; margin-top:6px;}
+  .inline-form input{font-family:inherit; font-size:16px; border:1px solid var(--line); border-radius:8px;
+    padding:6px 8px; width:130px;}
+  .inline-form button{font-family:"Avenir Next",sans-serif; font-size:12px; border:none; background:var(--pine);
+    color:var(--paper); border-radius:8px; padding:6px 10px; cursor:pointer;}
+
+  /* ---------- stats ---------- */
+  .stats-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .stat-tile{background:var(--paper); border:1px solid var(--line); border-radius:20px 24px 18px 24px; padding:16px; box-shadow:var(--shadow);}
+  .stat-tile .val{font-family:"Menlo","Consolas",monospace; font-size:26px; color:var(--pine); font-weight:600;}
+  .stat-tile .lbl{font-family:"Avenir Next","Segoe UI",sans-serif; font-size:10.5px; text-transform:uppercase;
+    letter-spacing:.06em; color:var(--ink-soft); margin-top:4px;}
+  .stat-tile.flame .val{color:var(--gold);}
+  .stat-tile.ring-tile{grid-column:1/-1; display:flex; align-items:center; gap:16px;}
+  .stat-tile.ring-tile .ring-big{width:64px; height:64px; flex:none;}
+  .season-badge{margin-top:14px; display:flex; align-items:center; gap:10px; background:var(--paper);
+    border:1px solid var(--line); border-radius:18px; padding:14px 16px;}
+  .season-badge .e{font-size:26px;}
+  .season-badge .n{font-family:"Avenir Next",sans-serif; font-size:12px; color:var(--ink-soft);}
+  .season-badge .n b{display:block; color:var(--pine); font-size:14px; font-family:"Iowan Old Style",serif;}
+  .philosophy{margin-top:16px; padding:16px; border-radius:22px 18px 22px 18px; background:var(--pine); color:var(--gold-soft);
+    font-style:italic; font-size:13.5px; text-align:center; line-height:1.5;}
+
+  /* ---------- settings screen ---------- */
+  .settings-group{background:var(--paper); border:1px solid var(--line); border-radius:20px; padding:6px; margin-bottom:16px;
+    box-shadow:var(--shadow);}
+  .theme-row{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; padding:10px;}
+  .theme-chip{border:1.5px solid var(--line); border-radius:14px; padding:12px 4px; text-align:center; cursor:pointer;
+    font-family:"Avenir Next",sans-serif; background:var(--bg);}
+  .theme-chip .e{font-size:20px; display:block; margin-bottom:2px;}
+  .theme-chip .n{font-size:10.5px; color:var(--ink-soft);}
+  .theme-chip.active{border-color:var(--gold); background:var(--gold-soft);}
+  .setting-row{display:flex; align-items:center; justify-content:space-between; padding:13px 14px;
+    border-top:1px solid var(--line); font-family:"Avenir Next",sans-serif; font-size:13.5px; color:var(--ink);}
+  .settings-group .setting-row:first-child{border-top:none;}
+  .switch{width:42px; height:24px; border-radius:999px; background:var(--bg-alt); border:1px solid var(--line);
+    position:relative; cursor:pointer; flex:none;}
+  .switch::after{content:''; position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:50%;
+    background:var(--paper); box-shadow:0 1px 3px rgba(0,0,0,.25);}
+  .switch.on{background:var(--pine);}
+  .switch.on::after{left:20px; background:var(--gold-soft);}
+  .settings-note{font-family:"Avenir Next",sans-serif; font-size:11.5px; color:var(--ink-soft); text-align:center; margin:6px 0 18px;}
+
+  /* ---------- modal / wizard ---------- */
+  .overlay{position:fixed; inset:0; background:rgba(35,40,31,.5); display:flex; align-items:flex-end; justify-content:center; z-index:50;}
+  .modal{background:var(--paper); border-radius:20px 20px 0 0; padding:22px 20px calc(22px + var(--safe-b));
+    width:100%; max-width:460px; box-shadow:0 -10px 30px rgba(0,0,0,.25); max-height:88vh; overflow-y:auto;}
+  .modal.center{border-radius:20px; margin-bottom:auto; margin-top:auto;}
+  .modal h2{margin:0 0 4px; font-size:18px; color:var(--pine);}
+  .modal p.hint{margin:0 0 14px; font-size:12.5px; color:var(--ink-soft); font-family:"Avenir Next",sans-serif;}
+  .modal label{display:block; font-family:"Avenir Next",sans-serif; font-size:11px; text-transform:uppercase;
+    letter-spacing:.05em; color:var(--ink-soft); margin:14px 0 5px;}
+  .modal input, .modal textarea{width:100%; font-family:inherit; font-size:16px; border:1px solid var(--line);
+    border-radius:10px; padding:11px 12px; background:var(--bg); color:var(--ink);}
+  .modal textarea{resize:vertical; min-height:52px;}
+  .step-dots{display:flex; gap:5px; margin-bottom:10px;}
+  .step-dots i{width:20px; height:4px; border-radius:2px; background:var(--bg-alt); display:block;}
+  .step-dots i.active{background:var(--gold);}
+  .type-grid, .color-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:4px;}
+  .type-chip{border:1.5px solid var(--line); border-radius:12px; padding:12px 4px; text-align:center;
+    background:var(--bg); cursor:pointer; font-family:"Avenir Next",sans-serif; color:var(--ink);}
+  .type-chip .e{font-size:24px; display:block;}
+  .type-chip .n{font-size:10.5px; color:var(--ink-soft); margin-top:2px; display:block;}
+  .type-chip.active{border-color:var(--gold); background:var(--gold-soft);}
+  .color-grid{grid-template-columns:repeat(5,1fr);}
+  .color-chip{width:100%; aspect-ratio:1; border-radius:50%; cursor:pointer; border:3px solid transparent;}
+  .color-chip.active{border-color:var(--ink);}
+  .modal-actions{display:flex; justify-content:space-between; gap:8px; margin-top:20px;}
+  .btn{font-family:"Avenir Next",sans-serif; font-size:14px; border:none; border-radius:10px; padding:11px 18px; cursor:pointer; min-height:44px;}
+  .btn.primary{background:var(--pine); color:var(--paper);}
+  .btn.ghost{background:none; color:var(--ink-soft);}
+  .btn.block{width:100%;}
+  .btn.danger{background:var(--rust); color:#fff;}
+
+  .congrats{position:fixed; inset:0; background:rgba(35,40,31,.65); display:flex; align-items:center; justify-content:center;
+    z-index:60; padding:20px;}
+  .congrats-card{background:var(--paper); border-radius:20px; padding:30px 24px; text-align:center; max-width:320px;
+    box-shadow:0 20px 50px rgba(0,0,0,.3);}
+  .congrats-card .big-emoji{font-size:54px; display:block; margin-bottom:10px;}
+  .congrats-card h2{margin:0 0 8px; color:var(--pine); font-size:19px;}
+  .congrats-card p{margin:0 0 18px; color:var(--ink-soft); font-size:13.5px; font-style:italic;}
+
+  .empty{text-align:center; padding:50px 10px; color:var(--ink-soft); font-style:italic;}
+  .section-title{font-family:"Avenir Next",sans-serif; font-size:12px; text-transform:uppercase; letter-spacing:.08em;
+    color:var(--ink-soft); margin:18px 0 8px 2px;}
+</style>
+<div id="app"></div>
+
+<script>
+/* ============ CONSTANTS ============ */
+const TYPES = {
+  oak:{e:'🌳', n:'Дуб'}, pine:{e:'🌲', n:'Сосна'}, palm:{e:'🌴', n:'Пальма'},
+  sakura:{e:'🌸', n:'Сакура'}, bush:{e:'🌿', n:'Куст'}, maple:{e:'🍁', n:'Клён'}
+};
+const COLORS = {
+  green:'#4C6F5B', blue:'#3E6E8E', purple:'#6E5A96', red:'#A6452F', orange:'#C98A2C'
+};
+const COLOR_NAMES = {green:'Зелёный', blue:'Синий', purple:'Фиолетовый', red:'Красный', orange:'Оранжевый'};
+const SEASONS = [
+  {days:365, e:'❄', n:'Зимний лес'}, {days:180, e:'🍂', n:'Осень'},
+  {days:90, e:'🌿', n:'Лето'}, {days:30, e:'🌱', n:'Весна'}, {days:0, e:'🌤', n:'Начало пути'}
+];
+function seasonFor(daysActive){ return SEASONS.find(s=>daysActive>=s.days); }
+
+const ICON_MARK = `<svg viewBox="0 0 34 34" class="brand-mark"><path d="M17 4l7 9h-4l6 8h-4l5 9H11l5-9H12l6-8h-4z" fill="#2F4A3C"/><rect x="15" y="27" width="4" height="6" fill="#8a6b3f"/></svg>`;
+function ringFlame(pct){
+  return `<svg viewBox="0 0 34 34" class="ring">
+  <circle cx="17" cy="17" r="14" fill="none" stroke="var(--bg-alt)" stroke-width="3"/>
+  <circle cx="17" cy="17" r="14" fill="none" stroke="var(--gold)" stroke-width="3" stroke-linecap="round"
+    stroke-dasharray="${Math.min(100,pct)*0.879} 999" transform="rotate(-90 17 17)"/>
+  <path d="M17 9c-1 2.6-3.8 4-3.8 7.6a3.8 3.8 0 0 0 7.6 0c0-1.3-.6-2.2-1.2-3 .2 1.2-.4 2-1.1 2-.9 0-1.2-.8-1-1.6.3-1.2-.2-3-.5-5z" fill="var(--gold)"/>
+</svg>`;
+}
+function branchDotRing(pct){
+  const p = Math.min(100,pct);
+  const color = p>=100 ? 'var(--pine)' : (p>0 ? 'var(--gold)' : 'var(--line)');
+  return `<svg viewBox="0 0 28 28" class="branch-dot-svg">
+  <circle cx="14" cy="14" r="11" fill="var(--paper)" stroke="var(--line)" stroke-width="2"/>
+  <circle cx="14" cy="14" r="11" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round"
+    stroke-dasharray="${p*0.6912} 999" transform="rotate(-90 14 14)"/>
+</svg>`;
+}
+function ringProgress(pct,cls){
+  return `<svg viewBox="0 0 60 60" class="${cls||'ring-big'}">
+  <circle cx="30" cy="30" r="25" fill="none" stroke="var(--bg-alt)" stroke-width="5"/>
+  <circle cx="30" cy="30" r="25" fill="none" stroke="var(--pine)" stroke-width="5" stroke-linecap="round"
+    stroke-dasharray="${Math.min(100,pct)*1.5708} 999" transform="rotate(-90 30 30)"/>
+  <text x="30" y="35" text-anchor="middle" font-size="15" font-family="Menlo,monospace" fill="var(--pine)">${pct}%</text>
+</svg>`;
+}
+
+/* ============ STATE ============ */
+const KEY = 'goaltree:data:v2';
+let DATA = null;
+let VIEW = 'home';
+let CURRENT_TREE = null;
+let PENDING_DELETE = null;
+let OPEN_FORM = null;
+let MODAL = null;            // 'newtree' | null
+let WIZ_STEP = 1;
+let WIZ_DRAFT = null;
+let CONGRATS_TREE = null;    // tree id currently showing congrats overlay
+let NODE_POPOVER = null;     // {treeId, nodeId, mode:'view'|'edit'} node currently open in the detail popover
+let TREE_ZOOM = {scale:1, x:0, y:0}; // pan/zoom state for the tree canvas, reset whenever a tree is (re)opened
+let TREE_ZOOM_READY = false; // whether the initial centering pass has run for the currently open tree
+
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+function todayISO(){ return new Date().toISOString().slice(0,10); }
+function daysBetween(a,b){ return Math.round((new Date(b)-new Date(a))/86400000); }
+
+function defaultSettings(){ return { theme:'auto', sound:false, notifications:false }; }
+
+function defaultData(){
+  return {
+    trees:[{
+      id:'daily', isDaily:true, name:'Ежедневные задания', goal:null, type:null, color:'green',
+      createdAt:todayISO(), lastActivity:null,
+      root:{ id:'daily-root', text:'Ежедневные задания', children:[] }
+    }],
+    streak:{ current:0, best:0, lastActiveDate:null, totalCompleted:0, activeDates:[], firstUseDate:todayISO() },
+    settings: defaultSettings()
+  };
+}
+
+/* ---- theme ---- */
+function effectiveTheme(){
+  const pref = (DATA && DATA.settings && DATA.settings.theme) || 'auto';
+  if(pref==='auto') return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  return pref;
+}
+function applyTheme(){
+  document.documentElement.setAttribute('data-theme', effectiveTheme());
+}
+if(window.matchMedia){
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', ()=>{
+    if(DATA && DATA.settings && DATA.settings.theme==='auto'){ applyTheme(); }
+  });
+}
+
+function load(){
+  try{
+    const raw = localStorage.getItem(KEY);
+    DATA = raw ? JSON.parse(raw) : defaultData();
+  }catch(e){ DATA = defaultData(); }
+  if(!DATA.settings) DATA.settings = defaultSettings();
+  migrateRemoveCorner();
+  checkStreakDecay();
+  applyTheme();
+  render();
+}
+/* The "start point" concept was removed: trees still carrying a leftover corner
+   node get it dissolved, with its children promoted to be root's direct children. */
+function migrateRemoveCorner(){
+  let changed = false;
+  for(const t of DATA.trees){
+    if(t.isDaily) continue;
+    const corner = t.root.children.find(c=>c.isCorner);
+    if(corner){
+      t.root.children = t.root.children.filter(c=>c!==corner).concat(corner.children);
+      changed = true;
+    }
+  }
+  if(changed) save();
+}
+function save(){
+  try{ localStorage.setItem(KEY, JSON.stringify(DATA)); }catch(e){ console.error(e); }
+}
+
+function checkStreakDecay(){
+  const s = DATA.streak;
+  if(s.lastActiveDate){
+    if(daysBetween(s.lastActiveDate, todayISO()) > 1) s.current = 0;
+  }
+}
+function recordActivity(){
+  const s = DATA.streak; const today = todayISO();
+  if(s.lastActiveDate !== today){
+    if(!s.lastActiveDate) s.current = 1;
+    else{ const gap = daysBetween(s.lastActiveDate, today); s.current = (gap===1) ? s.current+1 : 1; }
+    s.lastActiveDate = today;
+    if(!s.activeDates.includes(today)) s.activeDates.push(today);
+  }
+  if(s.current > s.best) s.best = s.current;
+}
+
+/* ============ NODE HELPERS ============ */
+function findTree(id){ return DATA.trees.find(t=>t.id===id); }
+function findNode(root,id){ if(root.id===id) return root; for(const c of root.children){ const r=findNode(c,id); if(r) return r; } return null; }
+function findParent(root,id){ for(const c of root.children){ if(c.id===id) return root; const r=findParent(c,id); if(r) return r; } return null; }
+function progressOf(node){
+  // Counts every descendant node once by its OWN checkbox (branches included, not just leaves).
+  let done=0,total=0;
+  for(const c of node.children){
+    total+=1; if(c.completed) done+=1;
+    const p = progressOf(c); done+=p.done; total+=p.total;
+  }
+  return {done,total};
+}
+function isDoneToday(node){ return node.completedDate === todayISO(); }
+function relDate(iso){
+  if(!iso) return 'ещё не начато';
+  const g = daysBetween(iso, todayISO());
+  if(g<=0) return 'сегодня'; if(g===1) return 'вчера'; if(g<7) return g+' дн. назад';
+  return new Date(iso).toLocaleDateString('ru-RU',{day:'numeric',month:'short'});
+}
+function stageOf(pct){
+  if(pct>=100) return 'grown'; if(pct>=80) return 'ripe'; if(pct>=50) return 'big';
+  if(pct>=20) return 'young'; return 'seed';
+}
+function stageEmoji(tree, pct){
+  if(tree.isDaily) return '🌳';
+  const type = TYPES[tree.type||'oak'].e;
+  const s = stageOf(pct);
+  if(s==='seed') return '🌱';
+  if(s==='young') return '🌿';
+  return type; // big, ripe, grown all show the chosen species
+}
+
+/* ============ ACTIONS ============ */
+function actionAddTree(draft){
+  const id = uid();
+  DATA.trees.push({
+    id, isDaily:false, name:draft.name.trim(), goal:draft.goal.trim()||null,
+    type:draft.type, color:draft.color, createdAt:todayISO(), lastActivity:null,
+    root:{ id:uid(), text:draft.goal.trim()||draft.name.trim(), children:[] }
+  });
+  MODAL=null; WIZ_DRAFT=null; save(); openTree(id);
+}
+function actionDeleteTree(id){ DATA.trees = DATA.trees.filter(t=>t.id!==id); save(); render(); }
+function actionAddNode(treeId,parentId,text){
+  const tree = findTree(treeId); const parent = findNode(tree.root,parentId);
+  const node = { id:uid(), text:text.trim(), children:[] };
+  if(treeId==='daily') node.completedDate=null; else node.completed=false;
+  parent.children.push(node); OPEN_FORM=null; save(); render();
+}
+function actionDeleteNode(treeId,nodeId){
+  const tree = findTree(treeId); const parent = findParent(tree.root,nodeId);
+  if(parent) parent.children = parent.children.filter(c=>c.id!==nodeId);
+  PENDING_DELETE=null; save(); render();
+}
+function actionEditNode(treeId,nodeId,data){
+  const tree = findTree(treeId); const node = findNode(tree.root,nodeId);
+  node.text = data.text.trim();
+  node.description = data.description.trim() || null;
+  if(node.id===tree.root.id && !tree.isDaily) tree.goal = node.text;
+  NODE_POPOVER=null; save(); render();
+}
+function actionToggle(treeId,nodeId){
+  const tree = findTree(treeId); const node = findNode(tree.root,nodeId); const s = DATA.streak;
+  const before = progressOf(tree.root); const pctBefore = before.total ? before.done/before.total*100 : 0;
+
+  if(treeId==='daily'){
+    const wasDone = isDoneToday(node);
+    node.completedDate = wasDone ? null : todayISO();
+    if(!wasDone){ s.totalCompleted++; recordActivity(); } else s.totalCompleted = Math.max(0,s.totalCompleted-1);
+  }else{
+    node.completed = !node.completed;
+    if(node.completed){ s.totalCompleted++; recordActivity(); } else s.totalCompleted = Math.max(0,s.totalCompleted-1);
+  }
+  tree.lastActivity = todayISO();
+
+  const after = progressOf(tree.root); const pctAfter = after.total ? after.done/after.total*100 : 0;
+  save();
+  if(!tree.isDaily && pctBefore<100 && pctAfter>=100 && after.total>0){ CONGRATS_TREE = treeId; }
+  render();
+}
+function actionResetAll(){
+  DATA = defaultData(); MODAL=null; save(); goHome();
+}
+
+/* ============ VIEW NAV ============ */
+function openTree(id){ CURRENT_TREE=id; VIEW='tree'; OPEN_FORM=null; PENDING_DELETE=null; NODE_POPOVER=null; TREE_ZOOM={scale:1,x:0,y:0}; TREE_ZOOM_READY=false; render(); }
+function goHome(){ VIEW='home'; CURRENT_TREE=null; NODE_POPOVER=null; render(); }
+function goStats(){ VIEW='stats'; render(); }
+function goSettings(){ VIEW='settings'; render(); }
+
+/* ============ RENDER ============ */
+function render(){
+  const app = document.getElementById('app');
+  app.innerHTML = renderTopbar() +
+    `<div class="content">` +
+    (VIEW==='home' ? renderHome() : VIEW==='tree' ? renderTreeView() : VIEW==='settings' ? renderSettingsView() : renderStats()) +
+    `</div>` +
+    renderBottomNav() +
+    (MODAL ? renderModal() : '') +
+    (NODE_POPOVER ? renderNodePopover() : '') +
+    (CONGRATS_TREE ? renderCongrats() : '');
+  bindEvents();
+}
+
+function renderTopbar(){
+  return `
+  <div class="topbar">
+    <div class="brand">${ICON_MARK}<h1>GoalTree</h1></div>
+    <div class="topbar-right">
+      <div class="streak-pill" data-go="stats">${ringFlame(Math.min(100,DATA.streak.current))}<span class="num">${DATA.streak.current}</span></div>
+      <button class="icon-btn" data-go="settings">⚙️</button>
+    </div>
+  </div>`;
+}
+
+function renderBottomNav(){
+  return `<nav class="tabs"><div class="inner">
+    <button data-go="home" class="${VIEW==='home'||VIEW==='tree'?'active':''}"><span class="ic">🌳</span><span class="t">Лес</span></button>
+    <button data-go="stats" class="${VIEW==='stats'?'active':''}"><span class="ic">📊</span><span class="t">Рост</span></button>
+    <button data-go="settings" class="${VIEW==='settings'?'active':''}"><span class="ic">⚙️</span><span class="t">Настройки</span></button>
+  </div></nav>`;
+}
+
+function renderHome(){
+  const daily = DATA.trees.find(t=>t.isDaily);
+  const custom = DATA.trees.filter(t=>!t.isDaily);
+  function card(t){
+    const p = progressOf(t.root); const pct = p.total ? Math.round(p.done/p.total*100) : 0;
+    const color = COLORS[t.color||'green'];
+    const emoji = stageEmoji(t,pct);
+    const glow = pct>=80 && !t.isDaily ? 'glow' : '';
+    const sprigCount = Math.max(1, Math.min(5, p.total || 1));
+    const sprigs = (t.isDaily ? '🍃' : (p.done>0 ? '🌸' : '🌿')).repeat(sprigCount);
+    return `
+    <div class="card" data-open="${t.id}">
+      <div class="accent" style="background:${color}"></div>
+      ${t.isDaily ? '' : `<button class="del" data-del-tree="${t.id}">✕</button>`}
+      <div class="body">
+        <div class="sprigs">${sprigs}</div>
+        <div class="row1"><span class="stage-emoji ${glow}">${emoji}</span>
+          <div><h3>${esc(t.name)}</h3>
+          <p class="goal">${t.goal ? '🎯 '+esc(t.goal) : (t.isDaily?'то, что делаешь каждый день':'')}</p></div>
+        </div>
+        <div class="meta-row"><span>${p.done}/${p.total} веток</span><span>${pct}%</span></div>
+        <div class="bar"><i style="width:${pct}%; background:linear-gradient(90deg, ${color}, var(--gold))"></i></div>
+        ${!t.isDaily ? `<div class="meta-row" style="margin-top:4px;"><span>активность: ${relDate(t.lastActivity)}</span></div>` : ''}
+      </div>
+    </div>`;
+  }
+  return `
+  <div class="section-title">Привычки</div>
+  <div class="list">${card(daily)}</div>
+  <div class="section-title">Мой сад целей</div>
+  <div class="list">
+    ${custom.map(card).join('')}
+    <div class="card add-card" data-new-tree="1"><span class="plus">+</span>Посадить новое дерево</div>
+  </div>`;
+}
+
+function renderTreeView(){
+  const t = findTree(CURRENT_TREE);
+  if(!t) return `<div class="empty">Дерево не найдено</div>`;
+  const p = progressOf(t.root); const pct = p.total ? Math.round(p.done/p.total*100) : 0;
+  const emoji = stageEmoji(t,pct);
+  return `
+  <button class="back-btn" data-go="home">← ко всем деревьям</button>
+  <div class="tree-title-block"><span class="stage-emoji">${emoji}</span><h2>${esc(t.name)}</h2></div>
+  ${t.goal ? `<p class="tree-goal-line">Итоговая цель: «${esc(t.goal)}» · ${pct}% пройдено</p>` : `<p class="tree-goal-line">${pct}% пройдено</p>`}
+  <div class="tree-scroll" id="tree-viewport">
+    <div class="tree-zoom-controls">
+      <button type="button" class="zoom-btn" data-zoom="in" title="Приблизить">+</button>
+      <button type="button" class="zoom-btn" data-zoom="out" title="Отдалить">−</button>
+      <button type="button" class="zoom-btn" data-zoom="reset" title="Сбросить масштаб">⤾</button>
+    </div>
+    ${(()=>{ const c = renderTreeCanvas(t);
+      return `<div class="tree" id="tree-canvas" style="width:${c.width}px; height:${c.height}px;">${c.html}</div>`; })()}
+  </div>`;
+}
+
+// Nodes deeper than 2 levels below root, or sharing a level with more than 4
+// siblings, collapse into a compact dot so lines don't get crowded.
+// Root and daily-tree nodes always render as full cards.
+function shouldCollapse(tree,isRoot,depth,siblingCount){
+  if(isRoot || tree.isDaily) return false;
+  return depth>2 || siblingCount>4;
+}
+
+// Pure layout pass (Reingold-Tilford-lite, no DOM measurement): every leaf gets the
+// next free integer column, every parent's column is the average of its children's
+// columns, so subtrees never overlap and a linear chain stays on one straight column.
+// row 0 = root, row 1 = root's children, row 2 = grandchildren, etc. Reuses
+// shouldCollapse so the layout's dot/card decision always matches what rendering draws.
+function computeTreeLayout(tree){
+  const layout = new Map(); // nodeId -> {col, row, collapsed}
+  let nextCol = 0;
+
+  function place(node,row,collapsed){
+    const col = nextCol; nextCol++;
+    layout.set(node.id,{col,row,collapsed});
+    return col;
+  }
+
+  function visitChildren(node,depth,row){
+    const childCount = node.children.length;
+    const cols = node.children.map(c=>visit(c,false,depth,childCount,row));
+    return cols.reduce((a,b)=>a+b,0)/cols.length;
+  }
+
+  function visit(node,isRoot,depth,siblingCount,row){
+    const collapsed = shouldCollapse(tree,isRoot,depth,siblingCount);
+    if(node.children.length===0) return place(node,row,collapsed);
+    const col = visitChildren(node,depth+1,row+1);
+    layout.set(node.id,{col,row,collapsed});
+    return col;
+  }
+
+  visit(tree.root,true,0,1,0);
+  return layout;
+}
+
+// Shared by the full node-card and the node popover so both expose the same actions.
+function renderNodeActionsRow(tree,node,isRoot){
+  const isDaily = tree.isDaily;
+  const canAddChild = isDaily ? isRoot : true;
+  const canDelete = !isRoot;
+  const showChildInput = OPEN_FORM===node.id;
+  const showConfirm = PENDING_DELETE===node.id;
+
+  const actions = [`<button class="mini-btn" data-editnode="${tree.id}|${node.id}">✎ ред.</button>`];
+  if(canAddChild) actions.push(`<button class="mini-btn" data-addform="${node.id}">+ ${isRoot&&isDaily?'задание':'ветка'}</button>`);
+  if(canDelete){
+    if(showConfirm){
+      actions.push(`<button class="mini-btn danger" data-confirmdel="${tree.id}|${node.id}">удалить?</button>`);
+      actions.push(`<button class="mini-btn" data-canceldel="1">×</button>`);
+    }else actions.push(`<button class="mini-btn danger" data-askdel="${node.id}">убрать</button>`);
+  }
+  let html = `<div class="node-actions">${actions.join('')}</div>`;
+  if(showChildInput){
+    html += `<form class="inline-form" data-addchild="${tree.id}|${node.id}">
+      <input type="text" autofocus placeholder="${isDaily?'например, выпить воду':'например, Математика'}" required>
+      <button type="submit">+</button></form>`;
+  }
+  return html;
+}
+
+function renderNodeCard(tree,node,isRoot){
+  const isDaily = tree.isDaily;
+  const checkable = !isRoot; // every real node gets its own checkbox, branch or leaf
+  const done = isDaily ? isDoneToday(node) : !!node.completed;
+  const hasChildren = node.children.length>0;
+  const prog = hasChildren ? progressOf(node) : null;
+  const editing = OPEN_FORM===node.id || PENDING_DELETE===node.id;
+  const rootStyle = isRoot ? `style="background:${COLORS[tree.color||'green']};border-color:${COLORS[tree.color||'green']}"` : '';
+
+  let inner = `<div class="node-card ${isRoot?'root':'task'} ${done&&checkable?'done':''} ${editing?'editing':''}" ${rootStyle}>`;
+  inner += `<div class="node-row">`;
+  if(checkable) inner += `<button type="button" class="leaf-toggle ${done?'bloom':''}" data-toggle="${tree.id}|${node.id}">${done?'🌸':'🍃'}</button>`;
+  inner += `<div class="node-text">${esc(node.text)}</div></div>`;
+  if(prog && prog.total>0) inner += `<div class="node-progress">${prog.done}/${prog.total}</div>`;
+  inner += renderNodeActionsRow(tree,node,isRoot);
+  inner += `</div>`;
+  return inner;
+}
+
+// Collapsed representation: a branch (has children) shows a progress ring, a leaf
+// (no children) shows a plain dot that just switches color when marked done.
+function renderNodeDot(tree,node){
+  const hasChildren = node.children.length>0;
+  if(hasChildren){
+    const prog = progressOf(node);
+    const pct = prog.total ? Math.round(prog.done/prog.total*100) : 0;
+    return `<button type="button" class="node-dot branch" data-opennodepop="${tree.id}|${node.id}" title="${esc(node.text)}">${branchDotRing(pct)}</button>`;
+  }
+  const done = !!node.completed;
+  return `<button type="button" class="node-dot leaf ${done?'done':''}" data-opennodepop="${tree.id}|${node.id}" title="${esc(node.text)}"><span class="dot-fill"></span></button>`;
+}
+
+const TREE_COL_WIDTH = 160;   // horizontal slot per column; card is 130px, leaves a gutter
+const TREE_CARD_ROW_STEP = 190; // vertical step for a row containing at least one full card
+const TREE_DOT_ROW_STEP = 70;   // vertical step for a row that is entirely collapsed dots
+const TREE_CARD_VISUAL_H = 150; // estimated card height, used only to anchor the connector line's start point
+const TREE_DOT_VISUAL_H = 28;   // dot's actual height, same as its CSS box
+
+// Renders every node as a flat, absolutely-positioned element using computeTreeLayout()'s
+// coordinates instead of nested <ul><li> flow — position never depends on a card's own
+// content width/height, so alignment can't drift (see Prerequisite 1).
+function renderTreeCanvas(tree){
+  const layout = computeTreeLayout(tree);
+
+  const rowHasCard = new Map();
+  for(const pos of layout.values()){
+    if(!pos.collapsed) rowHasCard.set(pos.row, true);
+    else if(!rowHasCard.has(pos.row)) rowHasCard.set(pos.row, false);
+  }
+  const maxRow = Math.max(...[...layout.values()].map(p=>p.row));
+  const rowTop = [0];
+  for(let r=0;r<=maxRow;r++){
+    rowTop[r+1] = rowTop[r] + (rowHasCard.get(r) ? TREE_CARD_ROW_STEP : TREE_DOT_ROW_STEP);
+  }
+
+  const centerX = (pos)=> pos.col*TREE_COL_WIDTH + TREE_COL_WIDTH/2;
+  const bottomY = (pos)=> rowTop[pos.row] + (pos.collapsed ? TREE_DOT_VISUAL_H : TREE_CARD_VISUAL_H);
+  const topY = (pos)=> rowTop[pos.row];
+
+  let items = '';
+  let lines = '';
+  let minCol=Infinity, maxCol=-Infinity;
+  function place(node,isRoot){
+    const pos = layout.get(node.id);
+    minCol = Math.min(minCol,pos.col); maxCol = Math.max(maxCol,pos.col);
+    const left = pos.col*TREE_COL_WIDTH;
+    const top = rowTop[pos.row];
+    const inner = pos.collapsed ? renderNodeDot(tree,node) : renderNodeCard(tree,node,isRoot);
+    items += `<div class="node-pos" style="left:${left}px; top:${top}px; width:${TREE_COL_WIDTH}px;">${inner}</div>`;
+    node.children.forEach(c=>{
+      const cpos = layout.get(c.id);
+      lines += `<line x1="${centerX(pos)}" y1="${bottomY(pos)}" x2="${centerX(cpos)}" y2="${topY(cpos)}"/>`;
+      place(c,false);
+    });
+  }
+  place(tree.root,true);
+
+  const width = (maxCol-minCol+1)*TREE_COL_WIDTH;
+  const height = rowTop[maxRow+1];
+  const svg = `<svg class="tree-lines" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">${lines}</svg>`;
+  return {html:svg+items, width, height};
+}
+
+function renderStats(){
+  const s = DATA.streak;
+  const totalDays = daysBetween(s.firstUseDate, todayISO()) + 1;
+  const activePct = totalDays>0 ? Math.round(s.activeDates.length/totalDays*100) : 0;
+  const treesCreated = DATA.trees.filter(t=>!t.isDaily).length;
+  const season = seasonFor(totalDays);
+  return `
+  <div class="section-title">Мой рост</div>
+  <div class="stats-grid">
+    <div class="stat-tile flame"><div class="val">🔥 ${s.current}</div><div class="lbl">текущий стрик</div></div>
+    <div class="stat-tile"><div class="val">🏆 ${s.best}</div><div class="lbl">лучший стрик</div></div>
+    <div class="stat-tile"><div class="val">🌱 ${s.totalCompleted}</div><div class="lbl">выполнено задач</div></div>
+    <div class="stat-tile"><div class="val">🌳 ${treesCreated}</div><div class="lbl">создано деревьев</div></div>
+    <div class="stat-tile ring-tile">
+      ${ringProgress(activePct)}
+      <div><div class="lbl" style="margin-top:0;">процент активных дней</div>
+        <div style="font-size:11px;color:var(--ink-soft);font-family:'Avenir Next',sans-serif;margin-top:2px;">${s.activeDates.length} из ${totalDays} дней с приложением</div></div>
+    </div>
+  </div>
+  <div class="season-badge"><span class="e">${season.e}</span><span class="n">Твой лес сейчас в фазе<b>${season.n}</b></span></div>
+  <div class="philosophy">«Я не просто выполняю задачи. Я выращиваю своё будущее.»</div>`;
+}
+
+function renderSettingsView(){
+  const st = DATA.settings || defaultSettings();
+  const themeChip = (key,e,n)=>`<div class="theme-chip ${st.theme===key?'active':''}" data-set-theme="${key}"><span class="e">${e}</span><span class="n">${n}</span></div>`;
+  const switchRow = (key,label,val)=>`
+    <div class="setting-row"><span>${label}</span><span class="switch ${val?'on':''}" data-toggle-setting="${key}"></span></div>`;
+  return `
+  <div class="section-title">Настройки</div>
+  <div class="settings-group">
+    <div class="theme-row">
+      ${themeChip('light','☀','Светлая')}
+      ${themeChip('dark','🌙','Тёмная')}
+      ${themeChip('auto','🌗','Авто')}
+    </div>
+  </div>
+  <div class="settings-group">
+    ${switchRow('sound','Звуковые эффекты', !!st.sound)}
+    ${switchRow('notifications','Напоминания', !!st.notifications)}
+  </div>
+  <p class="settings-note">GoalTree хранит данные только на этом устройстве, в этом чате.</p>
+  <button class="btn danger block" data-reset-all="1">Сбросить все данные</button>
+  <div class="philosophy" style="margin-top:20px;">«Каждое маленькое действие — лист.<br>Каждая завершённая цель — ветка.<br>Каждая мечта становится деревом.»</div>`;
+}
+
+/* ---- wizard for new tree ---- */
+function renderModal(){
+  if(MODAL==='newtree'){
+    if(!WIZ_DRAFT) WIZ_DRAFT = {name:'', goal:'', type:'oak', color:'green'};
+    const dots = [1,2,3].map(n=>`<i class="${WIZ_STEP===n?'active':''}"></i>`).join('');
+    let body = '';
+    if(WIZ_STEP===1){
+      body = `
+        <h2>Шаг 1 · Название</h2>
+        <p class="hint">Как назовём это дерево?</p>
+        <input type="text" id="wiz-name" value="${esc(WIZ_DRAFT.name)}" placeholder="например, Спорт" autofocus>
+        <div class="modal-actions"><span></span><button class="btn primary" data-wiz-next="1">Далее →</button></div>`;
+    }else if(WIZ_STEP===2){
+      body = `
+        <h2>Шаг 2 · Цель</h2>
+        <p class="hint">Какую конечную цель ты хочешь достичь? Хотя бы примерно — путь к ней ты выстроишь сам.</p>
+        <textarea id="wiz-goal" placeholder="например, Поступить в Politecnico di Milano">${esc(WIZ_DRAFT.goal)}</textarea>
+        <div class="modal-actions"><button class="btn ghost" data-wiz-back="1">← Назад</button><button class="btn primary" data-wiz-next="1">Далее →</button></div>`;
+    }else{
+      const typeChips = Object.entries(TYPES).map(([k,v])=>
+        `<div class="type-chip ${WIZ_DRAFT.type===k?'active':''}" data-wiz-type="${k}"><span class="e">${v.e}</span><span class="n">${v.n}</span></div>`).join('');
+      const colorChips = Object.entries(COLORS).map(([k,v])=>
+        `<div class="color-chip ${WIZ_DRAFT.color===k?'active':''}" style="background:${v}" data-wiz-color="${k}" title="${COLOR_NAMES[k]}"></div>`).join('');
+      body = `
+        <h2>Шаг 3 · Внешний вид</h2>
+        <p class="hint">Выбери вид и цвет дерева.</p>
+        <label>Тип дерева</label>
+        <div class="type-grid">${typeChips}</div>
+        <label>Цвет</label>
+        <div class="color-grid">${colorChips}</div>
+        <div class="modal-actions"><button class="btn ghost" data-wiz-back="1">← Назад</button><button class="btn primary" data-wiz-create="1">Создать 🌱</button></div>`;
+    }
+    return `<div class="overlay" data-close-modal="1"><div class="modal" data-stop="1">
+      <div class="step-dots">${dots}</div>${body}
+    </div></div>`;
+  }
+  return '';
+}
+
+/* ---- node detail popover: view (name/description/progress/checkbox/actions) + edit sub-view ---- */
+function renderNodePopover(){
+  const {treeId,nodeId,mode} = NODE_POPOVER;
+  const tree = findTree(treeId); const node = tree && findNode(tree.root,nodeId);
+  if(!tree || !node){ NODE_POPOVER=null; return ''; }
+  const isRoot = tree.root.id===node.id;
+  const body = mode==='edit' ? renderNodeEditForm(node) : renderNodeViewBody(tree,node,isRoot);
+  return `<div class="overlay" data-close-nodepop="1"><div class="modal center" data-stop="1">${body}</div></div>`;
+}
+
+function renderNodeViewBody(tree,node,isRoot){
+  const isDaily = tree.isDaily;
+  const checkable = !isRoot;
+  const done = isDaily ? isDoneToday(node) : !!node.completed;
+  const hasChildren = node.children.length>0;
+  const prog = hasChildren ? progressOf(node) : null;
+  const pct = prog && prog.total ? Math.round(prog.done/prog.total*100) : 0;
+  return `
+    <h2>${esc(node.text)}</h2>
+    ${node.description ? `<p class="hint">${esc(node.description)}</p>` : ''}
+    ${hasChildren ? `
+      <div class="meta-row"><span>${prog.done}/${prog.total} веток</span><span>${pct}%</span></div>
+      <div class="bar"><i style="width:${pct}%; background:linear-gradient(90deg, var(--pine), var(--gold))"></i></div>
+    ` : ''}
+    ${checkable ? `<div class="popover-toggle-row">
+      <button type="button" class="leaf-toggle big ${done?'bloom':''}" data-toggle="${tree.id}|${node.id}">${done?'🌸':'🍃'}</button>
+    </div>` : ''}
+    ${renderNodeActionsRow(tree,node,isRoot)}
+    <div class="modal-actions"><button class="btn ghost block" data-close-nodepop="1">Закрыть</button></div>`;
+}
+
+function renderNodeEditForm(node){
+  return `
+    <h2>Редактировать</h2>
+    <label>Название</label>
+    <input type="text" id="edit-text" value="${esc(node.text)}" autofocus>
+    <label>Описание</label>
+    <textarea id="edit-desc" placeholder="необязательно">${esc(node.description||'')}</textarea>
+    <div class="modal-actions">
+      <button class="btn ghost" data-close-nodepop="1">Отмена</button>
+      <button class="btn primary" data-save-editnode="1">Сохранить</button>
+    </div>`;
+}
+
+function renderCongrats(){
+  const t = findTree(CONGRATS_TREE);
+  if(!t) { CONGRATS_TREE=null; return ''; }
+  return `<div class="congrats" data-close-congrats="1">
+    <div class="congrats-card" data-stop="1">
+      <span class="big-emoji">${TYPES[t.type||'oak'].e}✨</span>
+      <h2>Поздравляем!</h2>
+      <p>Твоё дерево «${esc(t.name)}» выросло полностью.</p>
+      <button class="btn primary block" data-close-congrats="1">Ура!</button>
+    </div>
+  </div>`;
+}
+
+function esc(s){
+  const d=document.createElement('div'); d.textContent=s||'';
+  return d.innerHTML.replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+/* ============ EVENTS ============ */
+function bindEvents(){
+  const app = document.getElementById('app');
+
+  app.querySelectorAll('[data-go]').forEach(el=>el.addEventListener('click',()=>{
+    const v = el.dataset.go; if(v==='home') goHome(); else if(v==='stats') goStats(); else if(v==='settings') goSettings();
+  }));
+  app.querySelectorAll('[data-open]').forEach(el=>el.addEventListener('click',(e)=>{
+    if(e.target.closest('[data-del-tree]')) return; openTree(el.dataset.open);
+  }));
+  app.querySelectorAll('[data-del-tree]').forEach(el=>el.addEventListener('click',(e)=>{
+    e.stopPropagation();
+    if(confirmSafe('Удалить дерево «'+findTree(el.dataset.delTree).name+'» вместе со всеми ветками?')) actionDeleteTree(el.dataset.delTree);
+  }));
+  const newTreeCard = app.querySelector('[data-new-tree]');
+  if(newTreeCard) newTreeCard.addEventListener('click',()=>{ MODAL='newtree'; WIZ_STEP=1; WIZ_DRAFT=null; render(); });
+
+  app.querySelectorAll('[data-toggle]').forEach(el=>el.addEventListener('click',()=>{
+    const [tid,nid]=el.dataset.toggle.split('|'); actionToggle(tid,nid);
+  }));
+  app.querySelectorAll('[data-set-theme]').forEach(el=>el.addEventListener('click',()=>{
+    DATA.settings.theme = el.dataset.setTheme; save(); applyTheme(); render();
+  }));
+  app.querySelectorAll('[data-toggle-setting]').forEach(el=>el.addEventListener('click',()=>{
+    const key = el.dataset.toggleSetting;
+    DATA.settings[key] = !DATA.settings[key]; save(); render();
+  }));
+  app.querySelectorAll('[data-addform]').forEach(el=>el.addEventListener('click',()=>{ OPEN_FORM=el.dataset.addform; render(); }));
+  app.querySelectorAll('[data-askdel]').forEach(el=>el.addEventListener('click',()=>{ PENDING_DELETE=el.dataset.askdel; render(); }));
+  app.querySelectorAll('[data-canceldel]').forEach(el=>el.addEventListener('click',()=>{ PENDING_DELETE=null; render(); }));
+  app.querySelectorAll('[data-confirmdel]').forEach(el=>el.addEventListener('click',()=>{
+    const [tid,nid]=el.dataset.confirmdel.split('|'); actionDeleteNode(tid,nid);
+  }));
+  app.querySelectorAll('[data-addchild]').forEach(el=>el.addEventListener('submit',(e)=>{
+    e.preventDefault(); const [tid,nid]=el.dataset.addchild.split('|'); const val=el.querySelector('input').value;
+    if(val.trim()) actionAddNode(tid,nid,val);
+  }));
+  app.querySelectorAll('[data-editnode]').forEach(el=>el.addEventListener('click',()=>{
+    const [tid,nid]=el.dataset.editnode.split('|'); NODE_POPOVER={treeId:tid,nodeId:nid,mode:'edit'}; render();
+  }));
+  app.querySelectorAll('[data-opennodepop]').forEach(el=>el.addEventListener('click',()=>{
+    const [tid,nid]=el.dataset.opennodepop.split('|'); NODE_POPOVER={treeId:tid,nodeId:nid,mode:'view'}; render();
+  }));
+  app.querySelectorAll('[data-close-nodepop]').forEach(el=>el.addEventListener('click',(e)=>{
+    if(e.target===el || el.tagName==='BUTTON'){ NODE_POPOVER=null; render(); }
+  }));
+  const saveEditBtn = app.querySelector('[data-save-editnode]');
+  if(saveEditBtn) saveEditBtn.addEventListener('click',()=>{
+    const text = document.getElementById('edit-text').value;
+    if(!text.trim()) return;
+    const description = document.getElementById('edit-desc').value;
+    actionEditNode(NODE_POPOVER.treeId, NODE_POPOVER.nodeId, {text, description});
+  });
+
+  /* modal close */
+  app.querySelectorAll('[data-close-modal]').forEach(el=>el.addEventListener('click',(e)=>{
+    if(e.target===el || el.tagName==='BUTTON'){ MODAL=null; WIZ_DRAFT=null; render(); }
+  }));
+  app.querySelectorAll('[data-stop]').forEach(el=>el.addEventListener('click',(e)=>e.stopPropagation()));
+  const resetBtn = app.querySelector('[data-reset-all]');
+  if(resetBtn) resetBtn.addEventListener('click',()=>{
+    if(confirmSafe('Точно сбросить все данные? Это действие необратимо.')) actionResetAll();
+  });
+
+  /* wizard */
+  const nextBtn = app.querySelector('[data-wiz-next]');
+  if(nextBtn) nextBtn.addEventListener('click',()=>{
+    if(WIZ_STEP===1){ const v = document.getElementById('wiz-name').value; if(!v.trim()) return; WIZ_DRAFT.name=v; }
+    if(WIZ_STEP===2){ const v = document.getElementById('wiz-goal').value; WIZ_DRAFT.goal=v; }
+    WIZ_STEP++; render();
+  });
+  const backBtn = app.querySelector('[data-wiz-back]');
+  if(backBtn) backBtn.addEventListener('click',()=>{
+    if(WIZ_STEP===2){ const v=document.getElementById('wiz-goal'); if(v) WIZ_DRAFT.goal=v.value; }
+    WIZ_STEP--; render();
+  });
+  app.querySelectorAll('[data-wiz-type]').forEach(el=>el.addEventListener('click',()=>{ WIZ_DRAFT.type=el.dataset.wizType; render(); }));
+  app.querySelectorAll('[data-wiz-color]').forEach(el=>el.addEventListener('click',()=>{ WIZ_DRAFT.color=el.dataset.wizColor; render(); }));
+  const createBtn = app.querySelector('[data-wiz-create]');
+  if(createBtn) createBtn.addEventListener('click',()=>{ actionAddTree(WIZ_DRAFT); });
+
+  /* congrats */
+  app.querySelectorAll('[data-close-congrats]').forEach(el=>el.addEventListener('click',(e)=>{
+    if(e.target===el || el.tagName==='BUTTON'){ CONGRATS_TREE=null; render(); }
+  }));
+
+  /* tree zoom/pan */
+  if(VIEW==='tree' && !TREE_ZOOM_READY){ centerTreeCanvas(); TREE_ZOOM_READY=true; }
+  applyTreeZoom();
+  app.querySelectorAll('[data-zoom]').forEach(el=>el.addEventListener('click',()=>{
+    const action = el.dataset.zoom;
+    if(action==='in') TREE_ZOOM.scale = Math.min(2.5, TREE_ZOOM.scale*1.25);
+    else if(action==='out') TREE_ZOOM.scale = Math.max(0.4, TREE_ZOOM.scale/1.25);
+    else { TREE_ZOOM = {scale:1,x:0,y:0}; centerTreeCanvas(); }
+    applyTreeZoom();
+  }));
+  bindTreeZoomPan();
+}
+
+// margin:auto only centers the canvas when it FITS inside the viewport; a tree wider
+// than the screen instead sticks to the left edge (standard CSS behavior for an
+// overflowing block), which can leave the root off-screen. Center it explicitly
+// once, based on measured viewport/canvas width — this only moves the "camera" (pan
+// offset), it never feeds back into the layout math itself.
+function centerTreeCanvas(){
+  const viewport = document.getElementById('tree-viewport');
+  const canvas = document.getElementById('tree-canvas');
+  if(!viewport || !canvas) return;
+  TREE_ZOOM.x = (viewport.clientWidth - canvas.offsetWidth)/2;
+}
+
+function applyTreeZoom(){
+  const canvas = document.getElementById('tree-canvas');
+  if(canvas) canvas.style.transform = `translate(${TREE_ZOOM.x}px, ${TREE_ZOOM.y}px) scale(${TREE_ZOOM.scale})`;
+}
+
+// Pinch-to-zoom + drag-to-pan on touch, drag-to-pan + Ctrl+wheel-to-zoom on desktop.
+// Rebound on every render() since the viewport element is recreated each time.
+function bindTreeZoomPan(){
+  const viewport = document.getElementById('tree-viewport');
+  if(!viewport) return;
+  const pointers = new Map();
+  let dragging = false, startX = 0, startY = 0, startTX = 0, startTY = 0;
+  let pinchStartDist = 0, pinchStartScale = 1;
+
+  viewport.addEventListener('pointerdown',(e)=>{
+    if(e.target.closest('button, input, textarea, a, form')) return; // let controls behave normally, don't hijack their clicks
+    viewport.setPointerCapture(e.pointerId);
+    pointers.set(e.pointerId, {x:e.clientX, y:e.clientY});
+    if(pointers.size===1){
+      dragging = true; startX=e.clientX; startY=e.clientY; startTX=TREE_ZOOM.x; startTY=TREE_ZOOM.y;
+    }else if(pointers.size===2){
+      dragging = false;
+      const pts = [...pointers.values()];
+      pinchStartDist = Math.hypot(pts[0].x-pts[1].x, pts[0].y-pts[1].y) || 1;
+      pinchStartScale = TREE_ZOOM.scale;
+    }
+  });
+  viewport.addEventListener('pointermove',(e)=>{
+    if(!pointers.has(e.pointerId)) return;
+    pointers.set(e.pointerId, {x:e.clientX, y:e.clientY});
+    if(pointers.size===2){
+      const pts = [...pointers.values()];
+      const dist = Math.hypot(pts[0].x-pts[1].x, pts[0].y-pts[1].y);
+      TREE_ZOOM.scale = Math.min(2.5, Math.max(0.4, pinchStartScale * dist/pinchStartDist));
+      applyTreeZoom();
+    }else if(dragging && pointers.size===1){
+      TREE_ZOOM.x = startTX + (e.clientX-startX);
+      TREE_ZOOM.y = startTY + (e.clientY-startY);
+      applyTreeZoom();
+    }
+  });
+  const endPointer = (e)=>{
+    pointers.delete(e.pointerId);
+    dragging = pointers.size===1;
+    if(dragging){
+      const [p] = pointers.values();
+      startX=p.x; startY=p.y; startTX=TREE_ZOOM.x; startTY=TREE_ZOOM.y;
+    }
+  };
+  viewport.addEventListener('pointerup', endPointer);
+  viewport.addEventListener('pointercancel', endPointer);
+  viewport.addEventListener('wheel',(e)=>{
+    if(!e.ctrlKey) return; // plain wheel/trackpad scroll is left alone; Ctrl+wheel zooms
+    e.preventDefault();
+    const factor = e.deltaY<0 ? 1.1 : 0.9;
+    TREE_ZOOM.scale = Math.min(2.5, Math.max(0.4, TREE_ZOOM.scale*factor));
+    applyTreeZoom();
+  }, {passive:false});
+}
+
+function confirmSafe(msg){ try{ return window.confirm(msg); }catch(e){ return true; } }
+
+// Only works over http(s) (registration is a no-op on file://, which is fine —
+// the app is fully self-contained and already works offline via localStorage).
+if('serviceWorker' in navigator && location.protocol.startsWith('http')){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js').catch(e=>console.error('SW registration failed', e));
+  });
+}
+
+load();
+</script>
