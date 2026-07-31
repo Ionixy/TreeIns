@@ -111,8 +111,14 @@
   .tree-title-block h2{margin:0; font-size:19px; color:var(--pine);}
   .tree-goal-line{font-size:13px; font-style:italic; color:var(--ink-soft); margin:0 0 14px;}
 
+  /* The dot grid lives on the viewport, not on .tree: .tree is only as big as the tree's
+     bounding box, so painting the grid there made its edge visible as soon as you panned.
+     The viewport is always fully covered, and applyTreeZoom() drives background-size /
+     -position so the lattice pans and scales in lockstep with the canvas. */
   .tree-scroll{overflow:hidden; position:relative; padding:8px 0 24px; height:60vh; min-height:340px;
-    touch-action:none; -webkit-user-select:none; user-select:none;}
+    touch-action:none; -webkit-user-select:none; user-select:none;
+    background-image:radial-gradient(circle, var(--grid-dot) 1.5px, transparent 1.5px);
+    background-size:26px 26px;}
   .tree-zoom-controls{position:absolute; right:10px; bottom:10px; z-index:10; display:flex; flex-direction:column; gap:6px;}
   .zoom-btn{width:36px; height:36px; border-radius:10px; border:1px solid var(--line); background:var(--paper);
     color:var(--pine); font-size:18px; line-height:1; cursor:pointer; box-shadow:var(--shadow);
@@ -120,9 +126,7 @@
   .zoom-btn:hover{background:var(--gold-soft);}
   /* absolute-position layout grid: node coordinates come from computeTreeLayout(),
      not from DOM flow, so alignment can't drift with content width/height. */
-  .tree{transform-origin:top center; position:relative; margin:0 auto;
-    background-image:radial-gradient(circle, var(--grid-dot) 1.5px, transparent 1.5px);
-    background-size:26px 26px;}
+  .tree{transform-origin:top center; position:relative; margin:0 auto;}
   .node-pos{position:absolute; display:flex; justify-content:center; z-index:1;}
   .node-draggable{cursor:grab; touch-action:none;}
   .node-draggable.dragging{cursor:grabbing; z-index:10; opacity:.85;}
@@ -309,10 +313,33 @@ let CONGRATS_TREE = null;    // tree id currently showing congrats overlay
 let NODE_POPOVER = null;     // {treeId, nodeId, mode:'view'|'edit'} node currently open in the detail popover
 let TREE_ZOOM = {scale:1, x:0, y:0}; // pan/zoom state for the tree canvas, reset whenever a tree is (re)opened
 let TREE_ZOOM_READY = false; // whether the initial centering pass has run for the currently open tree
+let TREE_CANVAS_W = 0;       // canvas width from the last renderTreeCanvas(), cached so the
+                             // per-pointermove grid math never touches DOM layout
 
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
-function todayISO(){ return new Date().toISOString().slice(0,10); }
-function daysBetween(a,b){ return Math.round((new Date(b)-new Date(a))/86400000); }
+
+// Local calendar date, not UTC: toISOString() rolls the day over at 00:00 UTC, so for
+// anyone east/west of Greenwich "today" flipped at the wrong hour and daily tasks reset
+// mid-evening or stayed checked past midnight.
+function todayISO(){
+  const d = new Date(), p = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+}
+// Whole-calendar-day difference. Both sides are reduced to bare Y/M/D and compared in a
+// single fixed frame, so the result never drifts by a day across timezones or DST — and
+// dates already stored in UTC form by older builds still diff correctly, since they're
+// the same 'YYYY-MM-DD' shape.
+function dayIndex(iso){
+  const [y,m,d] = String(iso||'').slice(0,10).split('-').map(Number);
+  if(!y || !m || !d) return NaN; // malformed/absent date in old saves — don't invent one
+  return Date.UTC(y, m-1, d);
+}
+// NaN in means "unknown", and 0 out keeps callers on their neutral branch instead of
+// letting a bogus huge gap wipe a streak or skew the stats.
+function daysBetween(a,b){
+  const diff = (dayIndex(b) - dayIndex(a))/86400000;
+  return Number.isFinite(diff) ? Math.round(diff) : 0;
+}
 
 function defaultSettings(){ return { theme:'auto', sound:false, notifications:false }; }
 
@@ -353,6 +380,7 @@ function load(){
   checkStreakDecay();
   applyTheme();
   render();
+  startDayWatcher();
 }
 /* The "start point" concept was removed: trees still carrying a leftover corner
    node get it dissolved, with its children promoted to be root's direct children. */
@@ -378,6 +406,51 @@ function checkStreakDecay(){
     if(daysBetween(s.lastActiveDate, todayISO()) > 1) s.current = 0;
   }
 }
+
+/* ---- day rollover ----
+   Daily tasks aren't stored per-day and are never deleted: isDoneToday() just compares
+   completedDate to today, so the checkmarks lapse on their own the moment the date
+   changes. What was missing is making a long-lived tab NOTICE that change — this is a PWA
+   people leave open for days, so until now yesterday's checkmarks stayed on screen until
+   a manual reload. Nothing here clears completedDate: the history feeds the streak. */
+let DAY_WATCHER_ON = false;
+let LAST_SEEN_DAY = null;
+
+function msUntilLocalMidnight(){
+  const now = new Date();
+  // +2s past midnight so the timer never fires a hair early and still reads yesterday
+  const next = new Date(now.getFullYear(), now.getMonth(), now.getDate()+1, 0, 0, 2, 0);
+  return Math.max(1000, next - now);
+}
+
+function applyDayRolloverIfNeeded(){
+  const today = todayISO();
+  if(LAST_SEEN_DAY === today) return false;
+  LAST_SEEN_DAY = today;
+  checkStreakDecay();
+  save();
+  if(DATA) render();
+  return true;
+}
+
+// Armed once for the page's lifetime, not per render(): render() rebuilds #app.innerHTML,
+// but this hangs off window/document, so re-arming there would pile up duplicate timers
+// and listeners. A sleeping phone can skip the timer entirely, hence the visibility/focus
+// re-check on the way back in.
+function startDayWatcher(){
+  if(DAY_WATCHER_ON) return;
+  DAY_WATCHER_ON = true;
+  LAST_SEEN_DAY = todayISO();
+  let timer = null;
+  const arm = ()=>{
+    clearTimeout(timer);
+    timer = setTimeout(()=>{ applyDayRolloverIfNeeded(); arm(); }, msUntilLocalMidnight());
+  };
+  arm();
+  const recheck = ()=>{ if(!document.hidden && applyDayRolloverIfNeeded()) arm(); };
+  document.addEventListener('visibilitychange', recheck);
+  window.addEventListener('focus', recheck);
+}
 function recordActivity(){
   const s = DATA.streak; const today = todayISO();
   if(s.lastActiveDate !== today){
@@ -393,21 +466,31 @@ function recordActivity(){
 function findTree(id){ return DATA.trees.find(t=>t.id===id); }
 function findNode(root,id){ if(root.id===id) return root; for(const c of root.children){ const r=findNode(c,id); if(r) return r; } return null; }
 function findParent(root,id){ for(const c of root.children){ if(c.id===id) return root; const r=findParent(c,id); if(r) return r; } return null; }
-function progressOf(node){
+// Single source of truth for "is this node done": ordinary trees store a boolean in
+// `completed`, the daily tree stores a date in `completedDate` that only counts for today.
+// Everything (progress, cards, dots, popover, toggle) must go through this or the two
+// formats drift apart — that's why daily progress used to read a permanent 0/N.
+function isNodeDone(tree,node){
+  return tree && tree.isDaily ? isDoneToday(node) : !!node.completed;
+}
+function progressOf(tree,node){
   // Counts every descendant node once by its OWN checkbox (branches included, not just leaves).
   let done=0,total=0;
   for(const c of node.children){
-    total+=1; if(c.completed) done+=1;
-    const p = progressOf(c); done+=p.done; total+=p.total;
+    total+=1; if(isNodeDone(tree,c)) done+=1;
+    const p = progressOf(tree,c); done+=p.done; total+=p.total;
   }
   return {done,total};
 }
-function isDoneToday(node){ return node.completedDate === todayISO(); }
+function isDoneToday(node){ return !!node.completedDate && node.completedDate === todayISO(); }
 function relDate(iso){
   if(!iso) return 'ещё не начато';
   const g = daysBetween(iso, todayISO());
   if(g<=0) return 'сегодня'; if(g===1) return 'вчера'; if(g<7) return g+' дн. назад';
-  return new Date(iso).toLocaleDateString('ru-RU',{day:'numeric',month:'short'});
+  // build a LOCAL date: new Date('YYYY-MM-DD') is UTC midnight, which formats as the
+  // previous day for anyone behind Greenwich
+  const [y,m,d] = iso.slice(0,10).split('-').map(Number);
+  return new Date(y, m-1, d).toLocaleDateString('ru-RU',{day:'numeric',month:'short'});
 }
 function stageOf(pct){
   if(pct>=100) return 'grown'; if(pct>=80) return 'ripe'; if(pct>=50) return 'big';
@@ -453,7 +536,7 @@ function actionEditNode(treeId,nodeId,data){
 }
 function actionToggle(treeId,nodeId){
   const tree = findTree(treeId); const node = findNode(tree.root,nodeId); const s = DATA.streak;
-  const before = progressOf(tree.root); const pctBefore = before.total ? before.done/before.total*100 : 0;
+  const before = progressOf(tree,tree.root); const pctBefore = before.total ? before.done/before.total*100 : 0;
 
   if(treeId==='daily'){
     const wasDone = isDoneToday(node);
@@ -465,7 +548,7 @@ function actionToggle(treeId,nodeId){
   }
   tree.lastActivity = todayISO();
 
-  const after = progressOf(tree.root); const pctAfter = after.total ? after.done/after.total*100 : 0;
+  const after = progressOf(tree,tree.root); const pctAfter = after.total ? after.done/after.total*100 : 0;
   save();
   if(!tree.isDaily && pctBefore<100 && pctAfter>=100 && after.total>0){ CONGRATS_TREE = treeId; }
   render();
@@ -517,7 +600,7 @@ function renderHome(){
   const daily = DATA.trees.find(t=>t.isDaily);
   const custom = DATA.trees.filter(t=>!t.isDaily);
   function card(t){
-    const p = progressOf(t.root); const pct = p.total ? Math.round(p.done/p.total*100) : 0;
+    const p = progressOf(t,t.root); const pct = p.total ? Math.round(p.done/p.total*100) : 0;
     const color = COLORS[t.color||'green'];
     const emoji = stageEmoji(t,pct);
     const glow = pct>=80 && !t.isDaily ? 'glow' : '';
@@ -552,7 +635,7 @@ function renderHome(){
 function renderTreeView(){
   const t = findTree(CURRENT_TREE);
   if(!t) return `<div class="empty">Дерево не найдено</div>`;
-  const p = progressOf(t.root); const pct = p.total ? Math.round(p.done/p.total*100) : 0;
+  const p = progressOf(t,t.root); const pct = p.total ? Math.round(p.done/p.total*100) : 0;
   const emoji = stageEmoji(t,pct);
   return `
   <button class="back-btn" data-go="home">← ко всем деревьям</button>
@@ -645,11 +728,10 @@ function renderNodeActionsRow(tree,node,isRoot){
 }
 
 function renderNodeCard(tree,node,isRoot){
-  const isDaily = tree.isDaily;
   const checkable = !isRoot; // every real node gets its own checkbox, branch or leaf
-  const done = isDaily ? isDoneToday(node) : !!node.completed;
+  const done = isNodeDone(tree,node);
   const hasChildren = node.children.length>0;
-  const prog = hasChildren ? progressOf(node) : null;
+  const prog = hasChildren ? progressOf(tree,node) : null;
   const editing = OPEN_FORM===node.id || PENDING_DELETE===node.id;
   const rootStyle = isRoot ? `style="background:${COLORS[tree.color||'green']};border-color:${COLORS[tree.color||'green']}"` : '';
 
@@ -668,11 +750,11 @@ function renderNodeCard(tree,node,isRoot){
 function renderNodeDot(tree,node){
   const hasChildren = node.children.length>0;
   if(hasChildren){
-    const prog = progressOf(node);
+    const prog = progressOf(tree,node);
     const pct = prog.total ? Math.round(prog.done/prog.total*100) : 0;
     return `<button type="button" class="node-dot branch" data-opennodepop="${tree.id}|${node.id}" title="${esc(node.text)}">${branchDotRing(pct)}</button>`;
   }
-  const done = !!node.completed;
+  const done = isNodeDone(tree,node);
   return `<button type="button" class="node-dot leaf ${done?'done':''}" data-opennodepop="${tree.id}|${node.id}" title="${esc(node.text)}"><span class="dot-fill"></span></button>`;
 }
 
@@ -748,6 +830,10 @@ function renderTreeCanvas(tree){
     });
   }
   place(tree.root,true);
+
+  // Cached here, while the width is already known, so applyTreeZoom() can position the
+  // background grid on every pointermove without ever reading layout back from the DOM.
+  TREE_CANVAS_W = width;
 
   const svg = `<svg class="tree-lines" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">${lines}</svg>`;
   return {html:svg+items, width, height};
@@ -849,11 +935,10 @@ function renderNodePopover(){
 }
 
 function renderNodeViewBody(tree,node,isRoot){
-  const isDaily = tree.isDaily;
   const checkable = !isRoot;
-  const done = isDaily ? isDoneToday(node) : !!node.completed;
+  const done = isNodeDone(tree,node);
   const hasChildren = node.children.length>0;
-  const prog = hasChildren ? progressOf(node) : null;
+  const prog = hasChildren ? progressOf(tree,node) : null;
   const pct = prog && prog.total ? Math.round(prog.done/prog.total*100) : 0;
   return `
     <h2>${esc(node.text)}</h2>
@@ -1012,9 +1097,23 @@ function centerTreeCanvas(){
   TREE_ZOOM.x = (viewport.clientWidth - canvas.offsetWidth)/2;
 }
 
+const TREE_GRID_STEP = 26; // dot lattice pitch at scale 1, matches the CSS background-size
+
 function applyTreeZoom(){
   const canvas = document.getElementById('tree-canvas');
   if(canvas) canvas.style.transform = `translate(${TREE_ZOOM.x}px, ${TREE_ZOOM.y}px) scale(${TREE_ZOOM.scale})`;
+
+  // Keep the viewport's dot grid glued to the canvas. .tree has transform-origin:top
+  // center, so under scale(s) its left edge lands at x + W*(1-s)/2 while its top edge is
+  // just y — anchoring the lattice to that same point is what stops the dots sliding out
+  // from under the nodes when zooming. Pure style writes, no layout reads (W is cached).
+  const viewport = document.getElementById('tree-viewport');
+  if(viewport){
+    const s = TREE_ZOOM.scale, step = TREE_GRID_STEP*s;
+    const bgX = TREE_ZOOM.x + TREE_CANVAS_W*(1-s)/2;
+    viewport.style.backgroundSize = `${step}px ${step}px`;
+    viewport.style.backgroundPosition = `${bgX}px ${TREE_ZOOM.y}px`;
+  }
 }
 
 // Pinch-to-zoom + drag-to-pan on touch, drag-to-pan + Ctrl+wheel-to-zoom on desktop.
