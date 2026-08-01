@@ -263,6 +263,62 @@
   .congrats-card h2{margin:0 0 8px; color:var(--pine); font-size:19px;}
   .congrats-card p{margin:0 0 18px; color:var(--ink-soft); font-size:13.5px; font-style:italic;}
 
+  /* ---------- notebook ---------- */
+  .notebook-btn{margin-left:auto; flex:none; display:flex; align-items:center; gap:5px;
+    min-height:30px; padding:5px 10px; border:1px solid var(--line); border-radius:10px;
+    background:var(--paper); color:var(--ink-soft); cursor:pointer; position:relative;
+    font-family:"Avenir Next","Segoe UI",sans-serif; font-size:12px;}
+  .notebook-btn:hover{background:var(--gold-soft); color:var(--pine);}
+  .notebook-btn.has-notes::after{content:''; position:absolute; top:3px; right:3px;
+    width:7px; height:7px; border-radius:50%; background:var(--gold);}
+
+  .note-wrap{display:flex; flex-direction:column; border:1px solid var(--line);
+    border-radius:16px; background:var(--paper); overflow:hidden; box-shadow:var(--shadow);}
+  /* Pinned above the text so the on-screen keyboard can never cover it. */
+  .note-toolbar{position:sticky; top:0; z-index:2; display:flex; flex-wrap:wrap; gap:4px;
+    padding:8px; background:var(--bg-alt); border-bottom:1px solid var(--line);}
+  .fmt-btn{min-width:32px; height:32px; padding:0 7px; border:none; border-radius:8px;
+    background:var(--paper); color:var(--ink); font-size:14px; line-height:1; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    font-family:"Avenir Next","Segoe UI",sans-serif;}
+  .fmt-btn:hover{background:var(--gold-soft);}
+  .fmt-btn.active{background:var(--pine); color:var(--paper);}
+  .fmt-sep{width:1px; align-self:stretch; background:var(--line); margin:0 2px;}
+
+  .note-editor{min-height:46vh; padding:14px; outline:none; color:var(--ink);
+    font-size:16px; /* below 16px iOS zooms the page on focus */ line-height:1.6;
+    overflow-wrap:anywhere;}
+  .note-editor:empty::before{content:attr(data-placeholder); color:var(--ink-soft); font-style:italic;}
+  .note-editor h2{font-size:19px; color:var(--pine); margin:.6em 0 .3em;}
+  .note-editor ul, .note-editor ol{padding-left:22px; margin:.4em 0;}
+  .note-editor li{margin:.15em 0;}
+
+  .node-link{display:inline-block; padding:1px 7px; border-radius:7px; cursor:pointer;
+    background:var(--gold-soft); color:var(--pine); text-decoration:none;
+    border:1px solid var(--gold); font-size:.95em;}
+  .node-link::before{content:'🌿 ';}
+  /* Broken links keep their wording — losing it would lose the note's meaning. */
+  .node-link.broken{background:transparent; color:var(--ink-soft); border-style:dashed;
+    border-color:var(--line); text-decoration:line-through;}
+  .node-link.broken::before{content:'⚠ ';}
+
+  .picker-filter{width:100%; font-family:inherit; font-size:16px; border:1px solid var(--line);
+    border-radius:10px; padding:10px 12px; background:var(--bg); color:var(--ink); margin-bottom:10px;}
+  .picker-list{max-height:46vh; overflow-y:auto; display:flex; flex-direction:column; gap:2px;}
+  .picker-row{text-align:left; border:none; background:none; color:var(--ink); cursor:pointer;
+    padding:9px 10px; border-radius:8px; font-family:inherit; font-size:14px; min-height:38px;}
+  .picker-row:hover{background:var(--gold-soft); color:var(--pine);}
+  .reminder-actions{flex-direction:column; gap:8px;}
+
+  /* Flashed for a couple of seconds after a link jump, so it's obvious where you landed. */
+  .node-pos.node-focused .node-card{outline:3px solid var(--gold); outline-offset:3px;}
+
+  .toast{position:fixed; left:50%; bottom:calc(86px + var(--safe-b)); transform:translateX(-50%);
+    max-width:420px; width:calc(100% - 28px); z-index:80; padding:12px 14px; border-radius:12px;
+    background:var(--pine); color:var(--paper); box-shadow:0 8px 24px rgba(0,0,0,.3);
+    font-family:"Avenir Next","Segoe UI",sans-serif; font-size:13px; line-height:1.45;}
+  .toast.error{background:var(--rust); color:#fff;}
+
   .empty{text-align:center; padding:50px 10px; color:var(--ink-soft); font-style:italic;}
   .section-title{font-family:"Avenir Next",sans-serif; font-size:12px; text-transform:uppercase; letter-spacing:.08em;
     color:var(--ink-soft); margin:18px 0 8px 2px;}
@@ -320,6 +376,14 @@ let REMINDER = null;         // {treeId, nodeId} task that just got ticked, show
 let NODE_POPOVER = null;     // {treeId, nodeId} node currently open in the edit popover
 let TREE_ZOOM = {scale:1, x:0, y:0}; // pan/zoom state for the tree canvas, reset whenever a tree is (re)opened
 let TREE_ZOOM_READY = false; // whether the initial centering pass has run for the currently open tree
+let NOTEBOOK_TREE = null;    // tree id whose notebook is open (VIEW==='notebook')
+let NOTE_SAVE_TIMER = null;  // debounce handle for the notebook's autosave
+let NOTE_SAVED_RANGE = null; // caret position stashed while the node picker steals focus
+let NODE_PICKER = null;      // {treeId} while the insert-link picker is open
+let NODE_PICKER_FILTER = '';
+let PENDING_FOCUS_NODE = null; // {treeId,nodeId} to centre the camera on after the tree renders
+let HIGHLIGHT_NODE = null;     // node id to flash once the camera lands
+let TREE_CANVAS_OFF = {x:0,y:0}; // offX/offY from the last renderTreeCanvas() (see there)
 let TREE_CANVAS_W = 0;       // canvas width from the last renderTreeCanvas(), cached so the
                              // per-pointermove grid math never touches DOM layout
 
@@ -398,6 +462,18 @@ function load(){
   render();
   startDayWatcher();
   startEscHandler();
+  startNotebookFlush();
+}
+
+// Bound once for the page's lifetime. A phone can kill a backgrounded tab without warning
+// and pagehide is the last reliable moment to write, so the notebook is flushed on the way
+// out rather than trusting the 500ms autosave to have fired.
+let NOTE_FLUSH_BOUND = false;
+function startNotebookFlush(){
+  if(NOTE_FLUSH_BOUND) return;
+  NOTE_FLUSH_BOUND = true;
+  document.addEventListener('visibilitychange', ()=>{ if(document.hidden) flushNotebook(); });
+  window.addEventListener('pagehide', flushNotebook);
 }
 /* The "start point" concept was removed: trees still carrying a leftover corner
    node get it dissolved, with its children promoted to be root's direct children. */
@@ -413,8 +489,40 @@ function migrateRemoveCorner(){
   }
   if(changed) save();
 }
+// Returns whether the write landed. Notebooks are free text and will be the first thing
+// to hit the ~5MB localStorage ceiling, and silently dropping a page someone just typed
+// is the worst possible failure — so callers can react, and save() itself surfaces the
+// problem rather than only logging it.
 function save(){
-  try{ localStorage.setItem(KEY, JSON.stringify(DATA)); }catch(e){ console.error(e); }
+  try{
+    localStorage.setItem(KEY, JSON.stringify(DATA));
+    return true;
+  }catch(e){
+    console.error(e);
+    const quota = e && (e.name === 'QuotaExceededError'
+      || e.name === 'NS_ERROR_DOM_QUOTA_REACHED' || e.code === 22 || e.code === 1014);
+    showToast(quota
+      ? 'Не удалось сохранить: хранилище заполнено. Освободите место — удалите ненужное дерево или сократите заметки.'
+      : 'Не удалось сохранить изменения.', 'error');
+    return false;
+  }
+}
+
+// Injected straight into the DOM instead of going through render(): a failed save can
+// happen while the notebook's contenteditable is focused, and re-rendering there would
+// destroy the caret and the very text we're warning about.
+let TOAST_TIMER = null;
+function showToast(msg, kind){
+  let el = document.getElementById('toast');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'toast';
+    document.body.appendChild(el);
+  }
+  el.className = 'toast' + (kind === 'error' ? ' error' : '');
+  el.textContent = msg;
+  clearTimeout(TOAST_TIMER);
+  TOAST_TIMER = setTimeout(()=>{ el.remove(); }, kind === 'error' ? 6000 : 2600);
 }
 
 function checkStreakDecay(){
@@ -446,7 +554,13 @@ function applyDayRolloverIfNeeded(){
   LAST_SEEN_DAY = today;
   checkStreakDecay();
   save();
-  if(DATA) render();
+  // The streak work above always runs; the repaint deliberately does not while the
+  // notebook is open. This fires on every visibilitychange/focus, not just at midnight,
+  // so re-rendering here would blow away the contenteditable — caret, selection and any
+  // keystrokes not yet flushed — every time someone switched apps mid-sentence. Nothing
+  // on the notebook screen displays day-dependent data, and leaving it re-renders anyway,
+  // so skipping the repaint there costs nothing.
+  if(DATA && VIEW !== 'notebook') render();
   return true;
 }
 
@@ -478,6 +592,8 @@ function startEscHandler(){
   ESC_BOUND = true;
   document.addEventListener('keydown',(e)=>{
     if(e.key!=='Escape') return;
+    // the picker lives outside render(), so it closes itself rather than via a repaint
+    if(NODE_PICKER){ closeNodePicker(); return; }
     if(!OPEN_FORM && !PENDING_DELETE && !NODE_POPOVER && !REMINDER) return;
     OPEN_FORM = null; PENDING_DELETE = null; NODE_POPOVER = null; REMINDER = null;
     render();
@@ -601,17 +717,25 @@ function actionResetAll(){
 }
 
 /* ============ VIEW NAV ============ */
-function openTree(id){ CURRENT_TREE=id; VIEW='tree'; OPEN_FORM=null; PENDING_DELETE=null; NODE_POPOVER=null; REMINDER=null; TREE_ZOOM={scale:1,x:0,y:0}; TREE_ZOOM_READY=false; render(); }
-function goHome(){ VIEW='home'; CURRENT_TREE=null; NODE_POPOVER=null; REMINDER=null; render(); }
-function goStats(){ VIEW='stats'; REMINDER=null; render(); }
-function goSettings(){ VIEW='settings'; REMINDER=null; render(); }
+function openTree(id){ flushNotebook(); CURRENT_TREE=id; VIEW='tree'; OPEN_FORM=null; PENDING_DELETE=null; NODE_POPOVER=null; REMINDER=null; NODE_PICKER=null; TREE_ZOOM={scale:1,x:0,y:0}; TREE_ZOOM_READY=false; render(); }
+function goHome(){ flushNotebook(); VIEW='home'; CURRENT_TREE=null; NODE_POPOVER=null; REMINDER=null; NODE_PICKER=null; render(); }
+function goStats(){ flushNotebook(); VIEW='stats'; REMINDER=null; NODE_PICKER=null; render(); }
+function goSettings(){ flushNotebook(); VIEW='settings'; REMINDER=null; NODE_PICKER=null; render(); }
+function goNotebook(treeId){
+  NOTEBOOK_TREE = treeId; VIEW='notebook';
+  OPEN_FORM=null; PENDING_DELETE=null; NODE_POPOVER=null; REMINDER=null;
+  NODE_PICKER=null; NODE_PICKER_FILTER=''; NOTE_SAVED_RANGE=null;
+  render();
+}
 
 /* ============ RENDER ============ */
 function render(){
   const app = document.getElementById('app');
   app.innerHTML = renderTopbar() +
     `<div class="content">` +
-    (VIEW==='home' ? renderHome() : VIEW==='tree' ? renderTreeView() : VIEW==='settings' ? renderSettingsView() : renderStats()) +
+    (VIEW==='home' ? renderHome() : VIEW==='tree' ? renderTreeView()
+      : VIEW==='notebook' ? renderNotebookView()
+      : VIEW==='settings' ? renderSettingsView() : renderStats()) +
     `</div>` +
     renderBottomNav() +
     (MODAL ? renderModal() : '') +
@@ -634,7 +758,7 @@ function renderTopbar(){
 
 function renderBottomNav(){
   return `<nav class="tabs"><div class="inner">
-    <button data-go="home" class="${VIEW==='home'||VIEW==='tree'?'active':''}"><span class="ic">🌳</span><span class="t">Лес</span></button>
+    <button data-go="home" class="${VIEW==='home'||VIEW==='tree'||VIEW==='notebook'?'active':''}"><span class="ic">🌳</span><span class="t">Лес</span></button>
     <button data-go="stats" class="${VIEW==='stats'?'active':''}"><span class="ic">📊</span><span class="t">Рост</span></button>
     <button data-go="settings" class="${VIEW==='settings'?'active':''}"><span class="ic">⚙️</span><span class="t">Настройки</span></button>
   </div></nav>`;
@@ -683,7 +807,10 @@ function renderTreeView(){
   const emoji = stageEmoji(t,pct);
   return `
   <button class="back-btn" data-go="home">← ко всем деревьям</button>
-  <div class="tree-title-block"><span class="stage-emoji">${emoji}</span><h2>${esc(t.name)}</h2></div>
+  <div class="tree-title-block"><span class="stage-emoji">${emoji}</span><h2>${esc(t.name)}</h2>
+    <button type="button" class="notebook-btn${notebookIsEmpty(t) ? '' : ' has-notes'}"
+      data-open-notebook="${t.id}" title="Блокнот дерева" aria-label="Блокнот дерева">📓<span>Блокнот</span></button>
+  </div>
   ${t.goal ? `<p class="tree-goal-line">Итоговая цель: «${esc(t.goal)}» · ${pct}% пройдено</p>` : `<p class="tree-goal-line">${pct}% пройдено</p>`}
   <div class="tree-scroll" id="tree-viewport">
     <div class="tree-zoom-controls">
@@ -856,9 +983,11 @@ function renderTreeCanvas(tree){
   }
   place(tree.root,true);
 
-  // Cached here, while the width is already known, so applyTreeZoom() can position the
-  // background grid on every pointermove without ever reading layout back from the DOM.
+  // Cached here, while the numbers are already known, so applyTreeZoom() can position the
+  // background grid on every pointermove — and focusNodeInTree() can aim the camera at a
+  // node — without ever reading layout back from the DOM.
   TREE_CANVAS_W = width;
+  TREE_CANVAS_OFF = {x:offX, y:offY};
 
   const svg = `<svg class="tree-lines" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">${lines}</svg>`;
   return {html:svg+items, width, height};
@@ -982,8 +1111,180 @@ function renderReminder(){
   return `<div class="overlay" data-close-reminder="1"><div class="modal center reminder" data-stop="1">
     <h2>Запиши всё, что знаешь об этой теме</h2>
     <p class="reminder-topic">${esc(node.text)}</p>
-    <div class="modal-actions"><button class="btn primary block" data-close-reminder="1">Хорошо</button></div>
+    <div class="modal-actions reminder-actions">
+      <button class="btn primary block" data-reminder-notebook="${tree.id}|${node.id}">Записать в блокнот</button>
+      <button class="btn ghost block" data-close-reminder="1">Хорошо</button>
+    </div>
   </div></div>`;
+}
+
+/* ============ NOTEBOOK ============
+   Each tree carries its own free-text notes in tree.notebook (HTML). Older saves simply
+   don't have the field, hence the `|| ''` everywhere — no migration, no KEY bump. */
+
+const NOTE_MAX_CHARS = 100000; // ~a long chapter; well under the localStorage ceiling
+// Only what the toolbar and the link picker can actually produce. execCommand emits
+// b/i/strike/ul/ol/li/div/br and formatBlock headings; everything else that arrives via
+// paste gets unwrapped (text kept) or dropped outright.
+const NOTE_OK_TAGS = new Set(['B','STRONG','I','EM','S','STRIKE','DEL','U','H2','H3','P','DIV','BR','UL','OL','LI','A']);
+const NOTE_KILL_TAGS = new Set(['SCRIPT','STYLE','IFRAME','OBJECT','EMBED','IMG','SVG','LINK','META','VIDEO','AUDIO','CANVAS','FORM','INPUT','BUTTON','TEXTAREA','SELECT']);
+
+// Runs on paste AND on every read from storage: the app file gets updated while saved
+// notebooks stay exactly as they were, so stored HTML can never be treated as trusted.
+// <template> parses without running scripts or fetching anything.
+function sanitizeNotebook(html){
+  const tpl = document.createElement('template');
+  tpl.innerHTML = String(html || '');
+  const unwrap = (n)=>{ const f = document.createDocumentFragment();
+    while(n.firstChild) f.appendChild(n.firstChild); n.replaceWith(f); };
+  (function clean(parent){
+    [...parent.childNodes].forEach(n=>{
+      if(n.nodeType === 3) return;                 // text survives untouched
+      if(n.nodeType !== 1){ n.remove(); return; }  // comments, CDATA, …
+      clean(n);                                    // depth-first, so unwrapping is final
+      const tag = n.tagName;
+      if(NOTE_KILL_TAGS.has(tag)){ n.remove(); return; }   // images included: one photo as
+      if(!NOTE_OK_TAGS.has(tag)){ unwrap(n); return; }     // base64 would eat the quota
+      const link = tag === 'A' ? n.getAttribute('data-nodelink') : null;
+      // Blanket attribute strip kills style, on* handlers, href="javascript:" and the rest
+      // in one go; the two attributes a node link needs are put back explicitly.
+      [...n.attributes].forEach(a=>n.removeAttribute(a.name));
+      if(tag === 'A'){
+        if(!link){ unwrap(n); return; }            // ordinary links become plain text
+        n.setAttribute('data-nodelink', link);
+        n.setAttribute('class', 'node-link');
+        n.setAttribute('contenteditable', 'false');
+      }
+    });
+  })(tpl.content);
+  return tpl.innerHTML;
+}
+
+// Labels are resolved at display time, never frozen at insert time — otherwise renaming a
+// task would leave the old wording sitting in the notes forever.
+function resolveNoteLinks(tree, html){
+  const tpl = document.createElement('template');
+  tpl.innerHTML = html;
+  tpl.content.querySelectorAll('a[data-nodelink]').forEach(a=>{
+    const node = findNode(tree.root, a.getAttribute('data-nodelink'));
+    if(node){
+      a.textContent = node.text;
+      a.classList.remove('broken');
+      a.setAttribute('title', node.text);
+    }else{
+      // Keep whatever text is there: losing the wording would lose the note's meaning.
+      a.classList.add('broken');
+      a.setAttribute('title', 'Задание удалено');
+    }
+  });
+  return tpl.innerHTML;
+}
+
+// Writes the editor's current HTML into DATA without touching the screen. Anything that
+// replaces #app.innerHTML must call this first, or the last keystrokes die with the node.
+function flushNotebook(){
+  const ed = document.getElementById('note-editor');
+  if(!ed || !NOTEBOOK_TREE) return;
+  const tree = findTree(NOTEBOOK_TREE);
+  if(!tree) return;
+  clearTimeout(NOTE_SAVE_TIMER); NOTE_SAVE_TIMER = null;
+  const html = sanitizeNotebook(ed.innerHTML);
+  if(tree.notebook !== html){ tree.notebook = html; save(); }
+}
+
+function notebookIsEmpty(tree){
+  const html = tree && tree.notebook || '';
+  const tpl = document.createElement('template'); tpl.innerHTML = html;
+  return !(tpl.content.textContent || '').trim() && !tpl.content.querySelector('a[data-nodelink]');
+}
+
+function renderNotebookView(){
+  const t = findTree(NOTEBOOK_TREE);
+  if(!t) return `<div class="empty">Дерево не найдено</div>`;
+  const body = resolveNoteLinks(t, sanitizeNotebook(t.notebook || ''));
+  const btn = (cmd,label,icon,extra)=>
+    `<button type="button" class="fmt-btn" data-fmt="${cmd}" title="${label}" aria-label="${label}"${extra||''}>${icon}</button>`;
+  return `
+  <button class="back-btn" data-back-to-tree="1">← к дереву</button>
+  <div class="tree-title-block">
+    <span class="stage-emoji">📓</span><h2>${esc(t.name)}</h2>
+  </div>
+  <p class="tree-goal-line">Заметки по этому дереву</p>
+  <div class="note-wrap">
+    <div class="note-toolbar" id="note-toolbar">
+      ${btn('formatBlock','Заголовок','H')}
+      ${btn('bold','Жирный','<b>Ж</b>')}
+      ${btn('italic','Курсив','<i>К</i>')}
+      ${btn('strikeThrough','Зачёркнутый','<s>З</s>')}
+      ${btn('insertUnorderedList','Маркированный список','•')}
+      ${btn('insertOrderedList','Нумерованный список','1.')}
+      <span class="fmt-sep"></span>
+      <button type="button" class="fmt-btn" data-insert-link="1" title="Ссылка на задание" aria-label="Ссылка на задание">🔗</button>
+    </div>
+    <div class="note-editor" id="note-editor" contenteditable="true" role="textbox" aria-multiline="true"
+         aria-label="Заметки" data-placeholder="Запишите всё, что знаете по этой цели…">${body}</div>
+  </div>`;
+}
+
+/* Flat list with indentation so the tree's shape stays readable, plus a filter for trees
+   too big to scan. Only this tree's nodes — cross-notebook links are out of scope.
+
+   Deliberately mounted straight into the DOM instead of going through render(): render()
+   rebuilds #app.innerHTML, which would replace the editor with whatever was last written
+   to tree.notebook, losing both un-flushed keystrokes and the live caret the link is
+   supposed to be inserted at. Appending leaves the editor untouched, so the real
+   selection is still there when the user picks a node. */
+function pickerRowsHtml(tree){
+  const q = NODE_PICKER_FILTER.trim().toLowerCase();
+  const rows = [];
+  (function walk(node, depth){
+    if(!q || node.text.toLowerCase().includes(q)){
+      rows.push(`<button type="button" class="picker-row" data-picknode="${node.id}"
+        style="padding-left:${10 + depth*16}px">${esc(node.text)}</button>`);
+    }
+    node.children.forEach(c=>walk(c, depth+1));
+  })(tree.root, 0);
+  return rows.length ? rows.join('') : '<p class="hint">Ничего не найдено</p>';
+}
+
+function openNodePicker(){
+  const tree = findTree(NOTEBOOK_TREE);
+  if(!tree) return;
+  closeNodePicker();
+  NODE_PICKER = {treeId: tree.id}; NODE_PICKER_FILTER = '';
+  const wrap = document.createElement('div');
+  wrap.className = 'overlay';
+  wrap.id = 'node-picker';
+  wrap.innerHTML = `<div class="modal center">
+    <h2>Ссылка на задание</h2>
+    <input type="text" id="picker-filter" class="picker-filter" placeholder="Найти задание…" aria-label="Фильтр заданий">
+    <div class="picker-list" id="picker-list">${pickerRowsHtml(tree)}</div>
+    <div class="modal-actions"><button class="btn ghost block" id="picker-cancel">Отмена</button></div>
+  </div>`;
+  document.getElementById('app').appendChild(wrap);
+
+  wrap.addEventListener('click',(e)=>{ if(e.target === wrap) closeNodePicker(); });
+  wrap.querySelector('#picker-cancel').addEventListener('click', closeNodePicker);
+  const filter = wrap.querySelector('#picker-filter');
+  filter.addEventListener('input',()=>{
+    NODE_PICKER_FILTER = filter.value;
+    // only the list is redrawn, so the input keeps its own focus and caret
+    wrap.querySelector('#picker-list').innerHTML = pickerRowsHtml(tree);
+    bindPickerRows(wrap);
+  });
+  bindPickerRows(wrap);
+  filter.focus();
+}
+
+function bindPickerRows(wrap){
+  wrap.querySelectorAll('[data-picknode]').forEach(el=>
+    el.addEventListener('click',()=>insertNodeLink(el.dataset.picknode)));
+}
+
+function closeNodePicker(){
+  const el = document.getElementById('node-picker');
+  if(el) el.remove();
+  NODE_PICKER = null;
 }
 
 function renderCongrats(){
@@ -1096,8 +1397,30 @@ function bindEvents(){
     if(e.target===el || el.tagName==='BUTTON'){ CONGRATS_TREE=null; render(); }
   }));
 
+  /* ---- notebook ---- */
+  app.querySelectorAll('[data-open-notebook]').forEach(el=>el.addEventListener('click',()=>{
+    goNotebook(el.dataset.openNotebook);
+  }));
+  const noteBackBtn = app.querySelector('[data-back-to-tree]');
+  if(noteBackBtn) noteBackBtn.addEventListener('click',()=>{
+    if(NOTEBOOK_TREE) openTree(NOTEBOOK_TREE); else goHome();
+  });
+  app.querySelectorAll('[data-reminder-notebook]').forEach(el=>el.addEventListener('click',()=>{
+    const [tid,nid] = el.dataset.reminderNotebook.split('|');
+    appendNodeLinkToNotebook(tid,nid);
+    REMINDER = null;
+    goNotebook(tid);
+  }));
+  bindNotebookEditor();
+
+  /* Camera moves happen after the canvas exists, and replace the usual first-time
+     centering so the two don't fight over TREE_ZOOM. */
+  if(VIEW==='tree' && PENDING_FOCUS_NODE) focusNodeInTree();
+
   /* tree zoom/pan */
-  if(VIEW==='tree' && !TREE_ZOOM_READY){ centerTreeCanvas(); TREE_ZOOM_READY=true; }
+  // focusNodeInTree() already positioned the camera precisely; the generic centering
+  // would immediately undo it, so it only runs when no focus request is pending.
+  if(VIEW==='tree' && !TREE_ZOOM_READY && !PENDING_FOCUS_NODE){ centerTreeCanvas(); TREE_ZOOM_READY=true; }
   applyTreeZoom();
   app.querySelectorAll('[data-zoom]').forEach(el=>el.addEventListener('click',()=>{
     const action = el.dataset.zoom;
@@ -1286,6 +1609,186 @@ function updateEdgesForNode(nodeId,left,top){
   document.querySelectorAll(`.tree-lines path[data-from="${nodeId}"]`).forEach(p=>{
     p.setAttribute('d', bezierD(cxNode, ayNode, p.dataset.x2, p.dataset.y2));
   });
+}
+
+/* ---- notebook editor wiring ----
+   Formatting runs through document.execCommand. It is formally deprecated, but every
+   browser still implements it and it is the only way to get rich-text editing in a
+   project with no build step and no dependencies — which is a deliberate constraint here,
+   not an oversight. If it ever does disappear, the replacement is a real editor library,
+   which would mean introducing bundling. */
+function bindNotebookEditor(){
+  const ed = document.getElementById('note-editor');
+  if(!ed) return;
+  const toolbar = document.getElementById('note-toolbar');
+
+  const scheduleSave = ()=>{
+    clearTimeout(NOTE_SAVE_TIMER);
+    // Autosave never re-renders: doing so would wipe the caret out from under the typist.
+    NOTE_SAVE_TIMER = setTimeout(()=>{
+      const tree = findTree(NOTEBOOK_TREE);
+      if(!tree) return;
+      const html = sanitizeNotebook(ed.innerHTML);
+      if((ed.textContent || '').length > NOTE_MAX_CHARS){
+        showToast('Достигнут предел блокнота — дальше текст не сохранится. Сократите заметки.', 'error');
+      }
+      if(tree.notebook !== html){ tree.notebook = html; save(); }
+    }, 500);
+  };
+
+  const syncToolbar = ()=>{
+    if(!toolbar) return;
+    toolbar.querySelectorAll('[data-fmt]').forEach(b=>{
+      const cmd = b.dataset.fmt;
+      let on = false;
+      try{
+        on = cmd === 'formatBlock'
+          ? /h2/i.test(document.queryCommandValue('formatBlock') || '')
+          : document.queryCommandState(cmd);
+      }catch(_){}
+      b.classList.toggle('active', !!on);
+    });
+  };
+
+  if(toolbar){
+    toolbar.querySelectorAll('[data-fmt]').forEach(b=>{
+      // mousedown+preventDefault, never click: a click would move focus to the button
+      // first, collapsing the very selection the command is supposed to act on.
+      b.addEventListener('mousedown',(e)=>{
+        e.preventDefault();
+        const cmd = b.dataset.fmt;
+        ed.focus();
+        try{
+          if(cmd === 'formatBlock'){
+            const isH = /h2/i.test(document.queryCommandValue('formatBlock') || '');
+            document.execCommand('formatBlock', false, isH ? 'div' : 'h2');
+          }else{
+            document.execCommand(cmd, false, null);
+          }
+        }catch(_){}
+        syncToolbar();
+        scheduleSave();
+      });
+    });
+    const linkBtn = toolbar.querySelector('[data-insert-link]');
+    if(linkBtn) linkBtn.addEventListener('mousedown',(e)=>{
+      e.preventDefault();
+      stashNoteRange();   // captured while the editor is still focused
+      openNodePicker();
+    });
+  }
+
+  ed.addEventListener('input', ()=>{ scheduleSave(); syncToolbar(); });
+  ed.addEventListener('keyup', syncToolbar);
+  ed.addEventListener('mouseup', syncToolbar);
+  ed.addEventListener('blur', ()=>{ stashNoteRange(); flushNotebook(); });
+
+  // Paste is the one place arbitrary markup can enter, so it is rebuilt from a sanitized
+  // fragment rather than letting the browser insert whatever was on the clipboard.
+  ed.addEventListener('paste',(e)=>{
+    e.preventDefault();
+    const dt = e.clipboardData;
+    if(!dt) return;
+    const raw = dt.getData('text/html') || esc(dt.getData('text/plain') || '').replace(/\n/g,'<br>');
+    const clean = sanitizeNotebook(raw);
+    const tpl = document.createElement('template'); tpl.innerHTML = clean;
+    const addedLen = (tpl.content.textContent || '').length;
+    if((ed.textContent || '').length + addedLen > NOTE_MAX_CHARS){
+      showToast('Вставка не поместится: блокнот ограничен ' + NOTE_MAX_CHARS.toLocaleString('ru-RU') + ' символами.', 'error');
+      return;
+    }
+    try{ document.execCommand('insertHTML', false, clean); }catch(_){}
+    scheduleSave();
+  });
+
+  // A node link is one indivisible object: contenteditable="false" keeps the caret out,
+  // so Backspace removes the whole thing, and a plain tap navigates instead of editing.
+  // There are no modifier keys on a phone, so tap-to-follow is the only workable choice.
+  ed.addEventListener('click',(e)=>{
+    const a = e.target.closest('a[data-nodelink]');
+    if(!a) return;
+    e.preventDefault();
+    const id = a.getAttribute('data-nodelink');
+    const tree = findTree(NOTEBOOK_TREE);
+    if(!tree || !findNode(tree.root, id)){
+      showToast('Задание удалено — переходить некуда.');
+      return;
+    }
+    flushNotebook();
+    PENDING_FOCUS_NODE = {treeId: NOTEBOOK_TREE, nodeId: id};
+    openTree(NOTEBOOK_TREE);
+  });
+
+  syncToolbar();
+}
+
+function stashNoteRange(){
+  const sel = window.getSelection();
+  const ed = document.getElementById('note-editor');
+  if(sel && sel.rangeCount && ed && ed.contains(sel.anchorNode)){
+    NOTE_SAVED_RANGE = sel.getRangeAt(0).cloneRange();
+  }
+}
+
+function insertNodeLink(nodeId){
+  const tree = findTree(NOTEBOOK_TREE);
+  const node = tree && findNode(tree.root, nodeId);
+  closeNodePicker();
+  const ed = document.getElementById('note-editor');
+  if(!tree || !node || !ed) return;
+  ed.focus();
+  // The editor was never re-rendered, so the stashed range still points at live nodes.
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  if(NOTE_SAVED_RANGE && ed.contains(NOTE_SAVED_RANGE.startContainer)){
+    sel.addRange(NOTE_SAVED_RANGE);
+  }else{
+    const r = document.createRange(); r.selectNodeContents(ed); r.collapse(false); sel.addRange(r);
+  }
+  // Only the id is stored; the label is re-resolved from the node on every open.
+  const html = `<a class="node-link" data-nodelink="${esc(node.id)}" contenteditable="false">${esc(node.text)}</a>&nbsp;`;
+  try{ document.execCommand('insertHTML', false, html); }catch(_){}
+  flushNotebook();
+}
+
+// Appends rather than replaces: the reminder must never overwrite what's already written.
+function appendNodeLinkToNotebook(treeId,nodeId){
+  const tree = findTree(treeId);
+  const node = tree && findNode(tree.root, nodeId);
+  if(!tree || !node) return;
+  const link = `<div><a class="node-link" data-nodelink="${esc(node.id)}" contenteditable="false">${esc(node.text)}</a>&nbsp;</div>`;
+  tree.notebook = sanitizeNotebook((tree.notebook || '') + link);
+  save();
+}
+
+/* Aims the camera so the node sits in the middle of the viewport. Everything comes from
+   the numbers renderTreeCanvas() cached — no per-node DOM measuring, which is a standing
+   rule in this file (see the note above computeTreeLayout). */
+function focusNodeInTree(){
+  const req = PENDING_FOCUS_NODE;
+  PENDING_FOCUS_NODE = null;
+  if(!req) return;
+  const viewport = document.getElementById('tree-viewport');
+  const el = document.querySelector(`.node-pos[data-nodeid="${req.nodeId}"]`);
+  if(!viewport || !el){ showToast('Задание удалено — переходить некуда.'); return; }
+
+  const rawX = parseFloat(el.dataset.rawx), rawY = parseFloat(el.dataset.rawy);
+  const cx = rawX + TREE_CANVAS_OFF.x;                     // node centre, canvas space
+  const cy = rawY + TREE_CANVAS_OFF.y + TREE_CARD_MAX_H/2;
+  const s = 1;                                             // predictable scale on arrival
+  // Inverse of the transform in applyTreeZoom(): with transform-origin top center the
+  // canvas's left edge lands at x + W*(1-s)/2 and its top edge at y.
+  TREE_ZOOM = {
+    scale: s,
+    x: viewport.clientWidth/2  - TREE_CANVAS_W*(1-s)/2 - cx*s,
+    y: viewport.clientHeight/2 - cy*s
+  };
+  TREE_ZOOM_READY = true;
+  applyTreeZoom();
+
+  el.classList.add('node-focused');
+  clearTimeout(HIGHLIGHT_NODE);
+  HIGHLIGHT_NODE = setTimeout(()=>{ el.classList.remove('node-focused'); }, 2400);
 }
 
 function confirmSafe(msg){ try{ return window.confirm(msg); }catch(e){ return true; } }
