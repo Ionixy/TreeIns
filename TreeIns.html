@@ -313,6 +313,19 @@
   /* Flashed for a couple of seconds after a link jump, so it's obvious where you landed. */
   .node-pos.node-focused .node-card{outline:3px solid var(--gold); outline-offset:3px;}
 
+  /* ---------- sharing ---------- */
+  .share-btn{margin-left:6px;}
+  .export-opts{margin:12px 0 4px; padding:0;}
+  .export-row small{display:block; font-size:11px; color:var(--ink-soft); margin-top:2px;}
+  .export-actions{flex-direction:column; gap:8px;}
+  .share-link{width:100%; margin-top:10px; font-family:"Menlo","Consolas",monospace; font-size:12px;
+    border:1px solid var(--line); border-radius:10px; padding:8px; background:var(--bg);
+    color:var(--ink); resize:vertical; word-break:break-all;}
+  .import-facts{display:flex; flex-wrap:wrap; gap:8px; margin:14px 0 4px;
+    font-family:"Avenir Next","Segoe UI",sans-serif; font-size:12px; color:var(--ink-soft);}
+  .import-facts div{background:var(--bg-alt); border-radius:8px; padding:6px 10px;}
+  .import-facts b{color:var(--pine);}
+
   .toast{position:fixed; left:50%; bottom:calc(86px + var(--safe-b)); transform:translateX(-50%);
     max-width:420px; width:calc(100% - 28px); z-index:80; padding:12px 14px; border-radius:12px;
     background:var(--pine); color:var(--paper); box-shadow:0 8px 24px rgba(0,0,0,.3);
@@ -368,9 +381,13 @@ let VIEW = 'home';
 let CURRENT_TREE = null;
 let PENDING_DELETE = null;
 let OPEN_FORM = null;
-let MODAL = null;            // 'newtree' | null
+let MODAL = null;            // 'newtree' | 'export' | 'import' | null
 let WIZ_STEP = 1;
 let WIZ_DRAFT = null;
+let EXPORT_TREE = null;      // tree id being shared
+let EXPORT_OPTS = {marks:false, notes:false}; // both off by default: ticks and notes are private
+let EXPORT_LINK = null;      // built lazily; null until the user asks for a link
+let IMPORT_DRAFT = null;     // {payload, nodeCount, hasNotes, hasMarks, name} awaiting confirmation
 let CONGRATS_TREE = null;    // tree id currently showing congrats overlay
 let REMINDER = null;         // {treeId, nodeId} task that just got ticked, showing the "write it down" nudge
 let NODE_POPOVER = null;     // {treeId, nodeId} node currently open in the edit popover
@@ -463,6 +480,7 @@ function load(){
   startDayWatcher();
   startEscHandler();
   startNotebookFlush();
+  checkShareHash();
 }
 
 // Bound once for the page's lifetime. A phone can kill a backgrounded tab without warning
@@ -810,6 +828,8 @@ function renderTreeView(){
   <div class="tree-title-block"><span class="stage-emoji">${emoji}</span><h2>${esc(t.name)}</h2>
     <button type="button" class="notebook-btn${notebookIsEmpty(t) ? '' : ' has-notes'}"
       data-open-notebook="${t.id}" title="Блокнот дерева" aria-label="Блокнот дерева">📓<span>Блокнот</span></button>
+    <button type="button" class="notebook-btn share-btn"
+      data-share-tree="${t.id}" title="Поделиться деревом" aria-label="Поделиться деревом">📤<span>Поделиться</span></button>
   </div>
   ${t.goal ? `<p class="tree-goal-line">Итоговая цель: «${esc(t.goal)}» · ${pct}% пройдено</p>` : `<p class="tree-goal-line">${pct}% пройдено</p>`}
   <div class="tree-scroll" id="tree-viewport">
@@ -1035,8 +1055,11 @@ function renderSettingsView(){
     ${switchRow('sound','Звуковые эффекты', !!st.sound)}
     ${switchRow('notifications','Напоминания', !!st.notifications)}
   </div>
-  <p class="settings-note">GoalTree хранит данные только на этом устройстве, в этом чате.</p>
-  <button class="btn danger block" data-reset-all="1">Сбросить все данные</button>
+  <p class="settings-note">GoalTree хранит данные только на этом устройстве, в этом браузере.
+    Ничего никуда не отправляется само — деревом можно поделиться только вручную.</p>
+  <button class="btn block" data-import-tree="1">📥 Импортировать дерево из файла</button>
+  <input type="file" id="import-file" accept="application/json,.json" hidden>
+  <button class="btn danger block" data-reset-all="1" style="margin-top:10px;">Сбросить все данные</button>
   <div class="philosophy" style="margin-top:20px;">«Каждое маленькое действие — лист.<br>Каждая завершённая цель — ветка.<br>Каждая мечта становится деревом.»</div>`;
 }
 
@@ -1076,7 +1099,66 @@ function renderModal(){
       <div class="step-dots">${dots}</div>${body}
     </div></div>`;
   }
+  if(MODAL==='export') return renderExportModal();
+  if(MODAL==='import') return renderImportModal();
   return '';
+}
+
+function renderExportModal(){
+  const t = findTree(EXPORT_TREE);
+  if(!t){ MODAL=null; return ''; }
+  const p = progressOf(t, t.root);
+  const sw = (key,label,hint,on)=>`
+    <div class="setting-row export-row">
+      <span>${label}<small>${hint}</small></span>
+      <span class="switch ${on?'on':''}" data-export-opt="${key}"></span>
+    </div>`;
+  return `<div class="overlay" data-close-modal="1"><div class="modal center" data-stop="1">
+    <h2>Поделиться деревом</h2>
+    <p class="hint">Уйдёт <b>копия</b> «${esc(t.name)}» (${p.total} ${plural(p.total,'задача','задачи','задач')}).
+      После добавления у получателя это будет отдельное дерево: ваши изменения к нему не попадут, а его — к вам.</p>
+    <div class="settings-group export-opts">
+      ${sw('marks','Мои отметки','галочки о выполнении', EXPORT_OPTS.marks)}
+      ${sw('notes','Мои заметки','содержимое блокнота', EXPORT_OPTS.notes)}
+    </div>
+    <div class="modal-actions export-actions">
+      <button class="btn primary block" data-export-file="1">📄 Отправить файлом</button>
+      <button class="btn ghost block" data-export-link="1">🔗 Скопировать ссылку</button>
+      <button class="btn ghost block" data-close-modal="1">Отмена</button>
+    </div>
+    ${EXPORT_LINK ? `<textarea class="share-link" readonly rows="3" aria-label="Ссылка на дерево">${esc(EXPORT_LINK)}</textarea>` : ''}
+    <p class="settings-note">Ссылка удобна для небольших деревьев. Файл работает всегда — и это
+      единственный способ, если приложение установлено из APK.</p>
+  </div></div>`;
+}
+
+function renderImportModal(){
+  const d = IMPORT_DRAFT;
+  if(!d){ MODAL=null; return ''; }
+  const t = d.payload.tree;
+  return `<div class="overlay" data-close-modal="1"><div class="modal center" data-stop="1">
+    <h2>Добавить дерево себе?</h2>
+    <p class="hint">${t.goal ? 'Цель: «'+esc(t.goal)+'»' : 'Без итоговой цели'}</p>
+    <label>Название</label>
+    <input type="text" id="import-name" value="${esc(d.name)}" aria-label="Название дерева">
+    <div class="import-facts">
+      <div><b>${d.nodeCount}</b> ${plural(d.nodeCount,'узел','узла','узлов')}</div>
+      <div>${d.hasNotes ? '📓 с заметками' : 'без заметок'}</div>
+      <div>${d.hasMarks ? '✓ с отметками' : 'без отметок'}</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn ghost" data-close-modal="1">Отмена</button>
+      <button class="btn primary" data-do-import="1">Добавить себе</button>
+    </div>
+  </div></div>`;
+}
+
+function plural(n, one, few, many){
+  const a = Math.abs(n) % 100, b = a % 10;
+  if(a > 10 && a < 20) return many;
+  if(b > 1 && b < 5) return few;
+  if(b === 1) return one;
+  return many;
 }
 
 /* ---- node edit popover. Every node is a full card now, so name/description/progress and
@@ -1287,6 +1369,199 @@ function closeNodePicker(){
   NODE_PICKER = null;
 }
 
+/* ============ SHARING ============
+   There is no backend, so "sharing" means handing over a SNAPSHOT, not granting access:
+   after import the two trees are unrelated copies. Anything arriving here is untrusted —
+   it came out of a messenger — so every field is validated, clamped and sanitised before
+   it is allowed anywhere near DATA. */
+
+const SHARE_APP = 'goaltree';
+const SHARE_FORMAT = 1;                 // bump when the shape changes incompatibly
+const SHARE_HASH_PREFIX = '#gt';        // fragment marker: #gt=<plain> or #gtz=<gzipped>
+const SHARE_LINK_MAX = 8000;            // beyond this, messengers and browsers start truncating
+const IMPORT_MAX_NODES = 2000;
+const IMPORT_MAX_DEPTH = 50;            // findNode/progressOf/computeTreeLayout all recurse
+const SHARE_LIM = {name:120, goal:400, text:200, description:2000, notebook:100000};
+
+function clampStr(v, max){
+  if(typeof v !== 'string') return '';
+  return v.replace(/\s+/g,' ').trim().slice(0, max);
+}
+
+/* What actually leaves the device. Completion marks and the notebook are opt-in: the
+   recipient wants the shape of the goal, not someone else's ticks, and notes are private. */
+function serializeTreeForShare(tree, opts){
+  const withMarks = !!(opts && opts.marks), withNotes = !!(opts && opts.notes);
+  function packNode(n){
+    const o = { text: clampStr(n.text, SHARE_LIM.text), children: (n.children||[]).map(packNode) };
+    const d = clampStr(n.description, SHARE_LIM.description);
+    if(d) o.description = d;
+    if(n.pos && isFinite(+n.pos.x) && isFinite(+n.pos.y)) o.pos = {x:+n.pos.x, y:+n.pos.y};
+    if(withMarks){
+      if(n.completed === true) o.completed = true;
+      if(n.completedDate) o.completedDate = n.completedDate;
+    }
+    // The id travels only alongside notes: it exists purely so the importer can remap
+    // a[data-nodelink] onto the freshly generated ids. Without notes it is dead weight,
+    // and ids are regenerated on import regardless.
+    if(withNotes) o.id = n.id;
+    return o;
+  }
+  const packed = {
+    name: clampStr(tree.name, SHARE_LIM.name),
+    goal: tree.goal ? clampStr(tree.goal, SHARE_LIM.goal) : null,
+    type: TYPES[tree.type] ? tree.type : 'oak',
+    color: COLORS[tree.color] ? tree.color : 'green',
+    root: packNode(tree.root)
+  };
+  if(withNotes && tree.notebook){
+    packed.notebook = sanitizeNotebook(tree.notebook).slice(0, SHARE_LIM.notebook);
+  }
+  return { app: SHARE_APP, format: SHARE_FORMAT, exportedAt: new Date().toISOString(), tree: packed };
+}
+
+/* Returns {payload,nodeCount,…} or {error} — never throws, so no input can white-screen
+   the app. The size/depth caps run BEFORE anything is built, because the rest of the app
+   walks trees recursively and a deep file would overflow the stack. */
+function parseSharePayload(text){
+  let raw;
+  try{ raw = JSON.parse(text); }
+  catch(_){ return {error:'Не удалось прочитать файл: это не похоже на файл GoalTree.'}; }
+  if(!raw || typeof raw !== 'object' || Array.isArray(raw)) return {error:'Файл пуст или повреждён.'};
+  if(raw.app !== SHARE_APP) return {error:'Это не файл GoalTree.'};
+  if(typeof raw.format !== 'number') return {error:'В файле не указана версия формата.'};
+  if(raw.format > SHARE_FORMAT) return {error:'Файл сделан в более новой версии приложения — обновите GoalTree.'};
+  const t = raw.tree;
+  if(!t || typeof t !== 'object' || !t.root || typeof t.root !== 'object') return {error:'В файле нет дерева.'};
+
+  let count = 0, tooDeep = false, tooBig = false;
+  (function scan(n, depth){
+    if(tooBig || tooDeep) return;
+    if(depth > IMPORT_MAX_DEPTH){ tooDeep = true; return; }
+    if(++count > IMPORT_MAX_NODES){ tooBig = true; return; }
+    const kids = Array.isArray(n.children) ? n.children : [];
+    for(const k of kids){ if(k && typeof k === 'object') scan(k, depth+1); if(tooBig||tooDeep) return; }
+  })(t.root, 1);
+  if(tooDeep) return {error:`Дерево слишком глубокое (больше ${IMPORT_MAX_DEPTH} уровней) — такой файл не поддерживается.`};
+  if(tooBig)  return {error:`В дереве больше ${IMPORT_MAX_NODES} узлов — такой файл не поддерживается.`};
+
+  return {
+    payload: raw,
+    nodeCount: count,
+    hasNotes: !!t.notebook,
+    hasMarks: JSON.stringify(t.root).includes('"completed"')
+  };
+}
+
+/* Fresh ids everywhere: a shared file may carry id:'daily' / 'daily-root', which would
+   collide with the recipient's daily tree, and reusing ids would make importing the same
+   tree twice impossible. */
+function buildTreeFromPayload(payload, nameOverride){
+  const t = payload.tree;
+  const idMap = new Map();
+  function makeNode(src){
+    const id = uid();
+    if(src.id) idMap.set(String(src.id), id);
+    const n = { id, text: clampStr(src.text, SHARE_LIM.text) || 'Без названия', children: [] };
+    const d = clampStr(src.description, SHARE_LIM.description);
+    if(d) n.description = d;
+    if(src.pos && isFinite(+src.pos.x) && isFinite(+src.pos.y)) n.pos = {x:+src.pos.x, y:+src.pos.y};
+    // Imported trees are never the daily one, so state always lives in `completed`;
+    // a completedDate from someone's daily tree collapses into a plain tick.
+    n.completed = src.completed === true || !!src.completedDate;
+    const kids = Array.isArray(src.children) ? src.children : [];
+    for(const k of kids){ if(k && typeof k === 'object') n.children.push(makeNode(k)); }
+    return n;
+  }
+  const root = makeNode(t.root);
+  const tree = {
+    id: uid(),
+    isDaily: false,          // exactly one daily tree may exist; a second breaks renderHome
+    name: clampStr(nameOverride, SHARE_LIM.name) || clampStr(t.name, SHARE_LIM.name) || 'Импортированное дерево',
+    goal: clampStr(t.goal, SHARE_LIM.goal) || null,
+    type: TYPES[t.type] ? t.type : 'oak',      // unknown values would crash TYPES[...].e
+    color: COLORS[t.color] ? t.color : 'green',
+    createdAt: todayISO(),
+    lastActivity: null,
+    root
+  };
+  if(typeof t.notebook === 'string' && t.notebook){
+    // sanitise BEFORE storing, not at display time: this HTML came from a stranger
+    const clean = sanitizeNotebook(t.notebook.slice(0, SHARE_LIM.notebook));
+    tree.notebook = remapNoteLinks(clean, idMap);
+  }
+  return tree;
+}
+
+// Notebook links hold node ids, which we just regenerated — without this every link in an
+// imported note would point at nothing. Links whose target isn't in the file keep their
+// old id and simply render as broken, which resolveNoteLinks() already handles.
+function remapNoteLinks(html, idMap){
+  const tpl = document.createElement('template');
+  tpl.innerHTML = html;
+  tpl.content.querySelectorAll('a[data-nodelink]').forEach(a=>{
+    const fresh = idMap.get(String(a.getAttribute('data-nodelink')));
+    if(fresh) a.setAttribute('data-nodelink', fresh);
+  });
+  return tpl.innerHTML;
+}
+
+const SHARE_TRANSLIT = {а:'a',б:'b',в:'v',г:'g',д:'d',е:'e',ё:'e',ж:'zh',з:'z',и:'i',й:'y',
+  к:'k',л:'l',м:'m',н:'n',о:'o',п:'p',р:'r',с:'s',т:'t',у:'u',ф:'f',х:'h',ц:'c',ч:'ch',
+  ш:'sh',щ:'sch',ъ:'',ы:'y',ь:'',э:'e',ю:'yu',я:'ya'};
+function shareFileName(name){
+  const base = String(name || '').toLowerCase().split('')
+    .map(ch => SHARE_TRANSLIT[ch] !== undefined ? SHARE_TRANSLIT[ch] : ch).join('')
+    .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40);
+  return `goaltree-${base || 'tree'}.json`;
+}
+
+function b64url(bytes){
+  let s = '';
+  for(const b of bytes) s += String.fromCharCode(b);
+  return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+function unb64url(str){
+  const s = String(str).replace(/-/g,'+').replace(/_/g,'/');
+  const bin = atob(s + '==='.slice((s.length + 3) % 4));
+  const out = new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+/* The payload goes in the FRAGMENT, never a query parameter: fragments are not sent to
+   the server, so the contents of someone's tree never reach a hosting log. */
+async function buildShareLink(payload){
+  const json = JSON.stringify(payload);
+  let bytes = new TextEncoder().encode(json);
+  let gz = false;
+  if(typeof CompressionStream === 'function'){
+    try{
+      const stream = new Blob([bytes]).stream().pipeThrough(new CompressionStream('gzip'));
+      bytes = new Uint8Array(await new Response(stream).arrayBuffer());
+      gz = true;
+    }catch(_){ /* fall back to uncompressed */ }
+  }
+  const base = location.origin + location.pathname;
+  return base + SHARE_HASH_PREFIX + (gz ? 'z=' : '=') + b64url(bytes);
+}
+
+async function readShareHash(hash){
+  const m = /^#gt(z?)=(.+)$/.exec(hash || '');
+  if(!m) return null;
+  try{
+    let bytes = unb64url(m[2]);
+    if(m[1] === 'z'){
+      if(typeof DecompressionStream !== 'function') return {error:'Ссылка сжата, а этот браузер не умеет её распаковать. Попросите прислать файл.'};
+      const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+      bytes = new Uint8Array(await new Response(stream).arrayBuffer());
+    }
+    return parseSharePayload(new TextDecoder().decode(bytes));
+  }catch(_){
+    return {error:'Ссылка повреждена или обрезана при пересылке. Попросите прислать файл.'};
+  }
+}
+
 function renderCongrats(){
   const t = findTree(CONGRATS_TREE);
   if(!t) { CONGRATS_TREE=null; return ''; }
@@ -1364,7 +1639,9 @@ function bindEvents(){
 
   /* modal close */
   app.querySelectorAll('[data-close-modal]').forEach(el=>el.addEventListener('click',(e)=>{
-    if(e.target===el || el.tagName==='BUTTON'){ MODAL=null; WIZ_DRAFT=null; render(); }
+    if(e.target===el || el.tagName==='BUTTON'){
+      MODAL=null; WIZ_DRAFT=null; IMPORT_DRAFT=null; EXPORT_LINK=null; render();
+    }
   }));
   app.querySelectorAll('[data-stop]').forEach(el=>el.addEventListener('click',(e)=>e.stopPropagation()));
   const resetBtn = app.querySelector('[data-reset-all]');
@@ -1396,6 +1673,44 @@ function bindEvents(){
   app.querySelectorAll('[data-close-congrats]').forEach(el=>el.addEventListener('click',(e)=>{
     if(e.target===el || el.tagName==='BUTTON'){ CONGRATS_TREE=null; render(); }
   }));
+
+  /* ---- sharing ---- */
+  app.querySelectorAll('[data-share-tree]').forEach(el=>el.addEventListener('click',()=>{
+    EXPORT_TREE = el.dataset.shareTree; EXPORT_LINK = null;
+    EXPORT_OPTS = {marks:false, notes:false};   // re-defaulted each time it's opened
+    MODAL = 'export'; render();
+  }));
+  app.querySelectorAll('[data-export-opt]').forEach(el=>el.addEventListener('click',()=>{
+    const k = el.dataset.exportOpt;
+    EXPORT_OPTS[k] = !EXPORT_OPTS[k];
+    EXPORT_LINK = null;                        // options changed, any built link is stale
+    render();
+  }));
+  const expFile = app.querySelector('[data-export-file]');
+  if(expFile) expFile.addEventListener('click', exportTreeAsFile);
+  const expLink = app.querySelector('[data-export-link]');
+  if(expLink) expLink.addEventListener('click', exportTreeAsLink);
+
+  const importBtn = app.querySelector('[data-import-tree]');
+  const importInput = app.querySelector('#import-file');
+  if(importBtn && importInput){
+    importBtn.addEventListener('click', ()=>importInput.click());
+    importInput.addEventListener('change', async ()=>{
+      const file = importInput.files && importInput.files[0];
+      importInput.value = '';                  // so picking the same file twice still fires
+      if(!file) return;
+      let text = '';
+      try{ text = await file.text(); }
+      catch(_){ showToast('Не удалось прочитать файл.', 'error'); return; }
+      openImportPreview(parseSharePayload(text));
+    });
+  }
+  const doImport = app.querySelector('[data-do-import]');
+  if(doImport) doImport.addEventListener('click', ()=>{
+    const nameEl = document.getElementById('import-name');
+    if(nameEl && IMPORT_DRAFT) IMPORT_DRAFT.name = nameEl.value;
+    commitImport();
+  });
 
   /* ---- notebook ---- */
   app.querySelectorAll('[data-open-notebook]').forEach(el=>el.addEventListener('click',()=>{
@@ -1789,6 +2104,92 @@ function focusNodeInTree(){
   el.classList.add('node-focused');
   clearTimeout(HIGHLIGHT_NODE);
   HIGHLIGHT_NODE = setTimeout(()=>{ el.classList.remove('node-focused'); }, 2400);
+}
+
+/* ---- share/import actions ---- */
+
+async function exportTreeAsFile(){
+  const t = findTree(EXPORT_TREE);
+  if(!t) return;
+  const json = JSON.stringify(serializeTreeForShare(t, EXPORT_OPTS), null, 2);
+  const fname = shareFileName(t.name);
+  // On a phone this opens the system sheet (Telegram/WhatsApp/mail), which is exactly the
+  // handover we want; everywhere else it falls back to a plain download.
+  try{
+    const file = new File([json], fname, {type:'application/json'});
+    if(navigator.canShare && navigator.canShare({files:[file]}) && navigator.share){
+      await navigator.share({files:[file], title:t.name});
+      return;
+    }
+  }catch(e){
+    if(e && e.name === 'AbortError') return;   // user dismissed the sheet
+  }
+  try{
+    const url = URL.createObjectURL(new Blob([json], {type:'application/json'}));
+    const a = document.createElement('a');
+    a.href = url; a.download = fname;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 1000);
+    showToast('Файл сохранён: ' + fname);
+  }catch(_){ showToast('Не удалось сохранить файл.', 'error'); }
+}
+
+async function exportTreeAsLink(){
+  const t = findTree(EXPORT_TREE);
+  if(!t) return;
+  const link = await buildShareLink(serializeTreeForShare(t, EXPORT_OPTS));
+  if(link.length > SHARE_LINK_MAX){
+    // Truncated links are worse than no link: they look valid and fail on the far side.
+    showToast('Дерево слишком большое для ссылки — отправьте файлом.', 'error');
+    return;
+  }
+  EXPORT_LINK = link;
+  try{
+    await navigator.clipboard.writeText(link);
+    showToast('Ссылка скопирована. Вставьте её в сообщение.');
+  }catch(_){
+    showToast('Не удалось скопировать автоматически — ссылка показана ниже.');
+    render();
+  }
+}
+
+function openImportPreview(parsed){
+  if(!parsed || parsed.error){
+    showToast((parsed && parsed.error) || 'Не удалось прочитать данные.', 'error');
+    return;
+  }
+  IMPORT_DRAFT = Object.assign({}, parsed, {name: clampStr(parsed.payload.tree.name, SHARE_LIM.name) || 'Импортированное дерево'});
+  MODAL = 'import';
+  render();
+}
+
+// Nothing is written until the user confirms, and a failed save() rolls the whole thing
+// back rather than leaving a half-applied import behind.
+function commitImport(){
+  const d = IMPORT_DRAFT;
+  if(!d) return;
+  let tree;
+  try{ tree = buildTreeFromPayload(d.payload, d.name); }
+  catch(_){ showToast('Не удалось разобрать дерево из файла.', 'error'); return; }
+
+  DATA.trees.push(tree);
+  if(!save()){
+    DATA.trees.pop();                          // save() already explained why it failed
+    return;
+  }
+  IMPORT_DRAFT = null; MODAL = null;
+  openTree(tree.id);
+  showToast('Дерево «' + tree.name + '» добавлено.');
+}
+
+/* A link opened from a messenger carries the tree in the fragment. It is consumed once:
+   the hash is cleared immediately so a reload can't import a second copy and someone
+   else's data doesn't linger in the address bar. */
+async function checkShareHash(){
+  const hash = location.hash;
+  if(!hash || !hash.startsWith(SHARE_HASH_PREFIX)) return;
+  history.replaceState(null, '', location.pathname + location.search);
+  openImportPreview(await readShareHash(hash));
 }
 
 function confirmSafe(msg){ try{ return window.confirm(msg); }catch(e){ return true; } }
