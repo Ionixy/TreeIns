@@ -254,6 +254,9 @@
   .btn.ghost{background:none; color:var(--ink-soft);}
   .btn.block{width:100%;}
   .btn.danger{background:var(--rust); color:#fff;}
+  /* Neutral variant for secondary actions: the bare .btn falls back to the UA's grey
+     buttonface, which ignores the theme entirely. */
+  .btn.soft{background:var(--paper); color:var(--ink); border:1px solid var(--line); box-shadow:var(--shadow);}
 
   .congrats{position:fixed; inset:0; background:rgba(35,40,31,.65); display:flex; align-items:center; justify-content:center;
     z-index:60; padding:20px;}
@@ -325,6 +328,29 @@
     font-family:"Avenir Next","Segoe UI",sans-serif; font-size:12px; color:var(--ink-soft);}
   .import-facts div{background:var(--bg-alt); border-radius:8px; padding:6px 10px;}
   .import-facts b{color:var(--pine);}
+  .settings-actions{display:flex; flex-direction:column; gap:8px;}
+
+  /* ---------- AI prompt screen ---------- */
+  .prompt-steps{margin:0 0 12px; padding:14px 16px 14px 32px; background:var(--paper);
+    border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow);
+    font-family:"Avenir Next","Segoe UI",sans-serif; font-size:12.5px; line-height:1.55; color:var(--ink);}
+  .prompt-steps li{margin:0 0 6px;}
+  .prompt-steps li:last-child{margin-bottom:0;}
+  .prompt-steps li::marker{color:var(--gold); font-weight:600;}
+  .prompt-warn{display:flex; gap:7px; margin:0 0 14px; padding:10px 12px; border-radius:12px;
+    background:var(--gold-soft); color:var(--ink); border:1px solid var(--gold);
+    font-family:"Avenir Next","Segoe UI",sans-serif; font-size:11.5px; line-height:1.45;}
+  .prompt-actions{display:flex; flex-direction:column; gap:8px; margin-bottom:14px;}
+  /* white-space:pre keeps the JSON sample intact; the scrollbar lives on THIS box, so a
+     long sample line can never widen the page itself. */
+  .prompt-box{margin:0 0 6px; max-height:42vh; overflow:auto; -webkit-overflow-scrolling:touch;
+    background:var(--paper); border:1px solid var(--line); border-radius:16px; padding:12px 14px;
+    box-shadow:var(--shadow); font-family:"Menlo","Consolas",monospace; font-size:11.5px;
+    line-height:1.55; color:var(--ink); white-space:pre; tab-size:2;
+    user-select:text; -webkit-user-select:text;}
+  .paste-box{width:100%; min-height:104px; font-family:"Menlo","Consolas",monospace; font-size:12px;
+    border:1px solid var(--line); border-radius:12px; padding:10px 12px; background:var(--bg);
+    color:var(--ink); resize:vertical; overflow-wrap:anywhere;}
 
   .toast{position:fixed; left:50%; bottom:calc(86px + var(--safe-b)); transform:translateX(-50%);
     max-width:420px; width:calc(100% - 28px); z-index:80; padding:12px 14px; border-radius:12px;
@@ -381,7 +407,7 @@ let VIEW = 'home';
 let CURRENT_TREE = null;
 let PENDING_DELETE = null;
 let OPEN_FORM = null;
-let MODAL = null;            // 'newtree' | 'export' | 'import' | null
+let MODAL = null;            // 'newtree' | 'export' | 'import' | 'paste' | null
 let WIZ_STEP = 1;
 let WIZ_DRAFT = null;
 let EXPORT_TREE = null;      // tree id being shared
@@ -739,6 +765,9 @@ function openTree(id){ flushNotebook(); CURRENT_TREE=id; VIEW='tree'; OPEN_FORM=
 function goHome(){ flushNotebook(); VIEW='home'; CURRENT_TREE=null; NODE_POPOVER=null; REMINDER=null; NODE_PICKER=null; render(); }
 function goStats(){ flushNotebook(); VIEW='stats'; REMINDER=null; NODE_PICKER=null; render(); }
 function goSettings(){ flushNotebook(); VIEW='settings'; REMINDER=null; NODE_PICKER=null; render(); }
+// Its own screen rather than a modal: the prompt runs to ~90 lines, which a centred
+// dialog can't show on a phone without turning into a scroll-inside-a-scroll.
+function goAiPrompt(){ flushNotebook(); VIEW='aiprompt'; REMINDER=null; NODE_PICKER=null; render(); }
 function goNotebook(treeId){
   NOTEBOOK_TREE = treeId; VIEW='notebook';
   OPEN_FORM=null; PENDING_DELETE=null; NODE_POPOVER=null; REMINDER=null;
@@ -753,7 +782,8 @@ function render(){
     `<div class="content">` +
     (VIEW==='home' ? renderHome() : VIEW==='tree' ? renderTreeView()
       : VIEW==='notebook' ? renderNotebookView()
-      : VIEW==='settings' ? renderSettingsView() : renderStats()) +
+      : VIEW==='settings' ? renderSettingsView()
+      : VIEW==='aiprompt' ? renderAiPromptView() : renderStats()) +
     `</div>` +
     renderBottomNav() +
     (MODAL ? renderModal() : '') +
@@ -778,7 +808,7 @@ function renderBottomNav(){
   return `<nav class="tabs"><div class="inner">
     <button data-go="home" class="${VIEW==='home'||VIEW==='tree'||VIEW==='notebook'?'active':''}"><span class="ic">🌳</span><span class="t">Лес</span></button>
     <button data-go="stats" class="${VIEW==='stats'?'active':''}"><span class="ic">📊</span><span class="t">Рост</span></button>
-    <button data-go="settings" class="${VIEW==='settings'?'active':''}"><span class="ic">⚙️</span><span class="t">Настройки</span></button>
+    <button data-go="settings" class="${VIEW==='settings'||VIEW==='aiprompt'?'active':''}"><span class="ic">⚙️</span><span class="t">Настройки</span></button>
   </div></nav>`;
 }
 
@@ -1057,10 +1087,174 @@ function renderSettingsView(){
   </div>
   <p class="settings-note">GoalTree хранит данные только на этом устройстве, в этом браузере.
     Ничего никуда не отправляется само — деревом можно поделиться только вручную.</p>
-  <button class="btn block" data-import-tree="1">📥 Импортировать дерево из файла</button>
+  <div class="settings-actions">
+    <button class="btn soft block" data-ai-prompt="1">🤖 Создать дерево через ИИ</button>
+    <button class="btn soft block" data-import-tree="1">📥 Импортировать дерево из файла</button>
+    <button class="btn soft block" data-import-paste="1">📋 Вставить дерево текстом</button>
+  </div>
   <input type="file" id="import-file" accept="application/json,.json" hidden>
   <button class="btn danger block" data-reset-all="1" style="margin-top:10px;">Сбросить все данные</button>
   <div class="philosophy" style="margin-top:20px;">«Каждое маленькое действие — лист.<br>Каждая завершённая цель — ветка.<br>Каждая мечта становится деревом.»</div>`;
+}
+
+/* ============ AI PROMPT ============
+   A ready-made prompt the user hands to any chatbot to get a tree back as JSON, which
+   then comes home through the paste importer below. No bot is named or linked: the text
+   is generic and whichever one the user already has open will do.
+
+   Kept in sync with ai-prompt.md in the repo root — that file is the source, this is the
+   copy the app ships. The prompt spells out the allowed type/color values and every
+   length cap, so all of those are interpolated from the constants that actually enforce
+   them: add a tree type or change SHARE_LIM and the text follows instead of quietly
+   turning into a lie.
+
+   Editing note: this is a template literal, so `${` opens a substitution and a backslash
+   escapes. The JSON sample has braces but no dollar sign, so it survives verbatim; the
+   one real casualty is the escaped-quote rule, which must be written \\" in source to
+   read \" on screen. If you paste in text containing a literal `${`, escape the dollar. */
+function buildAiPrompt(){
+  const types = Object.keys(TYPES).map(k => k + ' ' + TYPES[k].e).join(', ');
+  const colors = Object.keys(COLORS).join(', ');
+  return `Ты помогаешь мне спланировать цель и оформить её как дерево задач для приложения
+GoalTree. На выходе мне нужен готовый файл дерева в формате JSON, который я
+импортирую в приложение.
+
+## МОЯ ЦЕЛЬ
+
+(заполни поля, лишнее удали)
+
+- Цель: ...
+- Срок: ...
+- Где я сейчас: ...
+- Что уже сделано: ...
+- Ограничения: ...
+- Сколько времени готов(а) уделять: ...
+
+## Что от тебя нужно
+
+Разбей цель на дерево задач и выдай его строго в формате из раздела «Формат файла».
+
+### Требования к содержанию
+
+1. 6–9 веток первого уровня — крупные направления работы, а не отдельные действия.
+   Ветки должны покрывать цель целиком: не только «основную» часть, но и то, что
+   обычно забывают (деньги, документы, здоровье, сроки, люди, запасной план).
+2. В каждой ветке 3–6 подзадач. Максимальная глубина — 3 уровня от корня
+   (ветка → подзадача → под-подзадача). Третий уровень использовать только там,
+   где он действительно нужен, а не везде.
+3. Каждая задача — законченное действие с проверяемым результатом. «Сдать IELTS на
+   6.5» — да. «Английский» — нет. Формулировка должна отвечать на вопрос «что именно
+   я сделаю и как пойму, что готово».
+4. Задачи внутри ветки идут в том порядке, в каком их делают. Если что-то нужно
+   начать сильно заранее из-за срока ожидания — скажи об этом в описании.
+5. Описание (description) — только там, где оно несёт информацию: конкретная цифра,
+   дедлайн, порядок действий, типичная ошибка, где искать. Не пересказывай заголовок
+   другими словами. Если сказать нечего — поле просто не добавляй.
+6. Всего 35–60 узлов. Меньше — дерево бесполезно, больше — им перестают пользоваться.
+7. Отдельной веткой — сроки и контроль: какие даты критичны, что и когда проверять,
+   что произойдёт при опоздании.
+8. Язык — русский, кроме собственных названий (экзаменов, организаций, программ).
+
+### Про факты
+
+Если цель завязана на внешние правила, даты, экзамены, цены или процедуры — проверь
+их в интернете, если есть такая возможность, и укажи в описании, на какой момент
+актуальны данные. Если проверить нельзя — не выдумывай конкретные даты и суммы:
+напиши, что нужно проверить и где именно (сайт, страница, ведомство). Ошибочный
+дедлайн в трекере хуже, чем его отсутствие.
+
+## Формат файла
+
+Ответ — один JSON-объект ровно такой формы:
+
+{
+  "app": "${SHARE_APP}",
+  "format": ${SHARE_FORMAT},
+  "tree": {
+    "name": "Короткое название",
+    "goal": "Цель одной фразой",
+    "type": "${IMPORT_DEFAULT_TYPE}",
+    "color": "${IMPORT_DEFAULT_COLOR}",
+    "root": {
+      "text": "Цель одной фразой",
+      "description": "Одна фраза про горизонт и главное условие успеха.",
+      "children": [
+        {
+          "text": "Название ветки",
+          "description": "Зачем эта ветка нужна.",
+          "children": [
+            { "text": "Задача с описанием", "description": "Конкретика: цифра, срок, порядок действий.", "children": [] },
+            { "text": "Задача без описания", "children": [] },
+            {
+              "text": "Задача с вложенностью",
+              "children": [
+                { "text": "Под-подзадача", "children": [] }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
+
+Жёсткие правила:
+
+- "app": "${SHARE_APP}" и "format": ${SHARE_FORMAT} — ровно так, иначе приложение откажется открывать
+  дерево.
+- Узел — это только text, необязательный description и children. Никаких id,
+  completed, pos и прочих полей добавлять не нужно: отметки выполнения расставляет
+  владелец дерева сам.
+- children есть у каждого узла, у листьев — пустой массив [].
+- type — ровно одно из: ${types}.
+  color — одно из: ${colors}. Другое значение молча заменится
+  на ${IMPORT_DEFAULT_TYPE} / ${IMPORT_DEFAULT_COLOR}.
+- tree.goal и root.text — одна и та же фраза.
+- Ограничения по длине: name ≤ ${SHARE_LIM.name} символов (лучше ≤ 30, чтобы влезало в карточку),
+  goal ≤ ${SHARE_LIM.goal}, text узла ≤ ${SHARE_LIM.text}, description ≤ ${SHARE_LIM.description}. Лишнее обрезается при импорте.
+- Переводы строк внутри текстов не сохраняются — пиши описание одним абзацем.
+- Всего не больше ${IMPORT_MAX_NODES} узлов и не глубже ${IMPORT_MAX_DEPTH} уровней.
+- Это должен быть валидный JSON: двойные кавычки, никаких комментариев, без висящих
+  запятых. Кавычки внутри текста экранируй как \\" — или используй «ёлочки».
+
+## Формат ответа
+
+1. Сначала — 5–10 строк: список веток первого уровня и по фразе, что в каждой.
+2. Затем — весь JSON одним блоком кода, без сокращений и без «...».
+3. В конце — что стоит проверить самому: факты, в которых ты не уверен, и решения,
+   которые я должен принять сам.
+
+Ничего больше не добавляй.`;
+}
+
+function renderAiPromptView(){
+  // navigator.share only exists on (mostly mobile) browsers that have somewhere to share
+  // TO — showing a button that throws everywhere else would be worse than no button.
+  const canShare = typeof navigator.share === 'function';
+  return `
+  <button class="back-btn" data-back-to-settings="1">← в настройки</button>
+  <div class="tree-title-block">
+    <span class="stage-emoji">🤖</span><h2>Дерево через ИИ</h2>
+  </div>
+  <p class="tree-goal-line">Пусть чат-бот распишет план, а вы его проверите и поправите</p>
+  <ol class="prompt-steps">
+    <li>Скопируйте промт кнопкой ниже.</li>
+    <li>Вставьте его в любой чат с ИИ и допишите свою цель в блоке «МОЯ ЦЕЛЬ».</li>
+    <li>Полученный JSON вставьте в поле внизу этой страницы.</li>
+  </ol>
+  <p class="prompt-warn"><span>⚠</span><span>ИИ уверенно ошибается в датах, ценах и правилах.
+    Прежде чем идти по такому плану, проверьте факты в первоисточнике.</span></p>
+  <div class="prompt-actions">
+    <button class="btn primary block" data-copy-prompt="1">📋 Скопировать промт</button>
+    ${canShare ? `<button class="btn soft block" data-share-prompt="1">📤 Поделиться промтом</button>` : ''}
+  </div>
+  <pre class="prompt-box" id="ai-prompt-text">${esc(buildAiPrompt())}</pre>
+  <div class="section-title">Готовый JSON вставьте сюда</div>
+  <textarea class="paste-box" aria-label="JSON дерева"
+    placeholder="Вставьте сюда JSON из ответа ИИ — целиком, от { до }"></textarea>
+  <button class="btn primary block" data-paste-import="1" style="margin-top:10px;">Разобрать и добавить дерево</button>
+  <p class="settings-note">Обрамление кодового блока и лишние переводы строк уберутся сами.
+    Перед добавлением вы увидите, что именно импортируется.</p>`;
 }
 
 /* ---- wizard for new tree ---- */
@@ -1101,7 +1295,24 @@ function renderModal(){
   }
   if(MODAL==='export') return renderExportModal();
   if(MODAL==='import') return renderImportModal();
+  if(MODAL==='paste') return renderPasteModal();
   return '';
+}
+
+// The same paste importer as on the AI-prompt screen, reachable from settings for people
+// who were simply sent a chunk of JSON and never went near the prompt.
+function renderPasteModal(){
+  return `<div class="overlay" data-close-modal="1"><div class="modal center" data-stop="1">
+    <h2>Вставить дерево текстом</h2>
+    <p class="hint">Подойдёт и JSON, который выдал ИИ, и содержимое файла GoalTree.
+      Обрамление кодового блока и лишние переводы строк уберутся сами.</p>
+    <textarea class="paste-box" aria-label="JSON дерева"
+      placeholder="Вставьте сюда JSON — целиком, от { до }"></textarea>
+    <div class="modal-actions">
+      <button class="btn ghost" data-close-modal="1">Отмена</button>
+      <button class="btn primary" data-paste-import="1">Разобрать</button>
+    </div>
+  </div></div>`;
 }
 
 function renderExportModal(){
@@ -1382,6 +1593,10 @@ const SHARE_LINK_MAX = 8000;            // beyond this, messengers and browsers 
 const IMPORT_MAX_NODES = 2000;
 const IMPORT_MAX_DEPTH = 50;            // findNode/progressOf/computeTreeLayout all recurse
 const SHARE_LIM = {name:120, goal:400, text:200, description:2000, notebook:100000};
+// What an unknown type/color falls back to on import. Named rather than inlined because
+// buildAiPrompt() has to tell the model the same two values.
+const IMPORT_DEFAULT_TYPE = 'oak';
+const IMPORT_DEFAULT_COLOR = 'green';
 
 function clampStr(v, max){
   if(typeof v !== 'string') return '';
@@ -1479,8 +1694,8 @@ function buildTreeFromPayload(payload, nameOverride){
     isDaily: false,          // exactly one daily tree may exist; a second breaks renderHome
     name: clampStr(nameOverride, SHARE_LIM.name) || clampStr(t.name, SHARE_LIM.name) || 'Импортированное дерево',
     goal: clampStr(t.goal, SHARE_LIM.goal) || null,
-    type: TYPES[t.type] ? t.type : 'oak',      // unknown values would crash TYPES[...].e
-    color: COLORS[t.color] ? t.color : 'green',
+    type: TYPES[t.type] ? t.type : IMPORT_DEFAULT_TYPE,   // unknown values would crash TYPES[...].e
+    color: COLORS[t.color] ? t.color : IMPORT_DEFAULT_COLOR,
     createdAt: todayISO(),
     lastActivity: null,
     root
@@ -1705,6 +1920,21 @@ function bindEvents(){
       openImportPreview(parseSharePayload(text));
     });
   }
+  const pasteBtn = app.querySelector('[data-import-paste]');
+  if(pasteBtn) pasteBtn.addEventListener('click', ()=>{ MODAL='paste'; render(); });
+  app.querySelectorAll('[data-paste-import]').forEach(el=>
+    el.addEventListener('click', ()=>importPastedTree(el)));
+
+  /* ---- AI prompt screen ---- */
+  const aiBtn = app.querySelector('[data-ai-prompt]');
+  if(aiBtn) aiBtn.addEventListener('click', goAiPrompt);
+  const aiBack = app.querySelector('[data-back-to-settings]');
+  if(aiBack) aiBack.addEventListener('click', goSettings);
+  const copyPrompt = app.querySelector('[data-copy-prompt]');
+  if(copyPrompt) copyPrompt.addEventListener('click', copyAiPrompt);
+  const sharePrompt = app.querySelector('[data-share-prompt]');
+  if(sharePrompt) sharePrompt.addEventListener('click', shareAiPrompt);
+
   const doImport = app.querySelector('[data-do-import]');
   if(doImport) doImport.addEventListener('click', ()=>{
     const nameEl = document.getElementById('import-name');
@@ -2151,6 +2381,80 @@ async function exportTreeAsLink(){
     showToast('Не удалось скопировать автоматически — ссылка показана ниже.');
     render();
   }
+}
+
+/* People copy a chatbot's answer straight out of the chat, so the JSON usually arrives
+   wrapped in a markdown fence and padded with blank lines. Peel that off; everything
+   inside goes to the validator untouched. */
+function stripCodeFence(text){
+  const s = String(text == null ? '' : text).trim();
+  const fenced = /^```[^\n]*\r?\n([\s\S]*?)\r?\n?```$/.exec(s);
+  if(fenced) return fenced[1].trim();
+  // Half a fence: the selection started or stopped one line short of the closing ticks.
+  return s.replace(/^```[^\n]*\r?\n?/, '').replace(/\r?\n?```$/, '').trim();
+}
+
+/* Deliberately thin: it only tells apart "this isn't JSON at all" from "this is JSON but
+   not ours" — the two mistakes someone grabbing the wrong slice of a chat actually makes
+   — and then hands the very same string to parseSharePayload(). Depth caps, node caps,
+   clamping, type/color checks and notebook sanitising all still happen there, once. */
+function parsePastedTree(text){
+  const s = stripCodeFence(text);
+  if(!s) return {error:'Поле пустое — вставьте в него JSON, который выдал ИИ.'};
+  let raw;
+  try{ raw = JSON.parse(s); }
+  catch(_){
+    return {error:'Это не похоже на JSON. Скопируйте из ответа только сам блок с деревом — от первой «{» до последней «}» включительно.'};
+  }
+  if(!raw || typeof raw !== 'object' || Array.isArray(raw) || raw.app !== SHARE_APP){
+    return {error:'JSON прочитался, но это не дерево GoalTree: в нём нет поля "app": "' + SHARE_APP + '". Проверьте, что скопирован весь объект, а не его часть.'};
+  }
+  return parseSharePayload(s);
+}
+
+// Reads whichever paste box the button belongs to: the one on the AI-prompt screen, or
+// the one in the settings modal. Both feed the same preview dialog as a file import.
+function importPastedTree(btn){
+  const box = (btn.closest('.modal') || document.getElementById('app')).querySelector('.paste-box');
+  if(!box) return;
+  const parsed = parsePastedTree(box.value);
+  if(parsed.error){ showToast(parsed.error, 'error'); return; }  // text stays put, so it can be fixed
+  box.value = '';
+  openImportPreview(parsed);
+}
+
+/* Clipboard needs a secure context, which file:// isn't — and that's exactly how someone
+   testing a downloaded copy will open the app. Fall back to selecting the text so the
+   platform's own copy gesture still works, and never let the rejection escape. */
+async function copyAiPrompt(){
+  const text = buildAiPrompt();
+  try{
+    if(!navigator.clipboard || !navigator.clipboard.writeText) throw new Error('no clipboard');
+    await navigator.clipboard.writeText(text);
+    showToast('Промт скопирован. Вставьте его в чат с ИИ и допишите свою цель.');
+  }catch(_){
+    selectAiPromptText();
+    showToast('Скопировать автоматически не вышло — текст выделен целиком, скопируйте его вручную.', 'error');
+  }
+}
+
+function selectAiPromptText(){
+  const el = document.getElementById('ai-prompt-text');
+  if(!el) return;
+  try{
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    el.scrollIntoView({block:'nearest'});
+  }catch(_){ /* selection API unavailable — the text is still on screen to copy by hand */ }
+}
+
+// Rejects on cancel as well as on failure, and neither is worth a message.
+async function shareAiPrompt(){
+  try{ await navigator.share({title:'Промт GoalTree', text: buildAiPrompt()}); }
+  catch(_){}
 }
 
 function openImportPreview(parsed){
