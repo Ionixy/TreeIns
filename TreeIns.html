@@ -104,7 +104,14 @@
   /* No top padding: the sticky bar has to start at y=0 so its own (blurred) background
      is what sits behind the status bar. The bar pays the top inset itself. */
   #app{max-width:460px; margin:0 auto; min-height:100vh; min-height:100dvh; position:relative; z-index:2;
-    padding:0 calc(16px + var(--safe-r)) calc(96px + var(--safe-b)) calc(16px + var(--safe-l));}
+    padding:0 calc(16px + var(--safe-r)) calc(96px + var(--safe-b)) calc(16px + var(--safe-l));
+    display:flex; flex-direction:column;}
+  /* A full-height column so a view can claim the leftover space instead of guessing at it
+     with a vh fraction — that is what lets the tree canvas end exactly above the tab bar
+     on any screen, whatever the header above it wraps to. #app's bottom padding is what
+     reserves the tab bar's own room, so this stops short of it. The fixed tab bar and the
+     overlays are position:fixed, so they never take part in this column. */
+  #app > .content{flex:1 1 auto; min-height:0; display:flex; flex-direction:column;}
 
   /* ---------- top bar ---------- */
   /* Translucent + blurred like a UINavigationBar, with a hairline underneath.
@@ -156,11 +163,21 @@
   .card .accent{width:4px; align-self:stretch; border-radius:2px; flex:none;}
   .card .body{flex:1; min-width:0;}
   .card .row1{display:flex; align-items:center; gap:10px;}
+  /* min-width:0 is what actually keeps long text inside the card: a flex item defaults to
+     min-width:auto, i.e. it refuses to shrink below its longest unbreakable run, so the
+     goal line pushed straight through the card's right edge instead of wrapping. */
+  .card .row1 .titles{flex:1; min-width:0;}
   .card .stage-emoji{font-size:26px; flex:none; line-height:1;}
   .card .stage-emoji.glow{filter:drop-shadow(0 0 7px var(--tint));}
-  .card h3{margin:0; font-size:17px; font-weight:600; letter-spacing:-.02em; color:var(--label); line-height:1.25;}
+  .card h3{margin:0; font-size:17px; font-weight:600; letter-spacing:-.02em; color:var(--label);
+    line-height:1.25; overflow-wrap:anywhere;}
+  /* Room for the absolutely-positioned ✕, which only exists on deletable trees. */
+  .card.has-del h3{padding-right:22px;}
+  /* Wraps rather than ellipsising, but capped at two lines so one long goal can't make a
+     card three times the height of its neighbours. */
   .card p.goal{margin:1px 0 0; font-size:13px; color:var(--label-2); line-height:1.3;
-    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+    overflow:hidden; overflow-wrap:anywhere;
+    display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2;}
   .card .meta-row{display:flex; justify-content:space-between; align-items:center; margin-top:10px;
     font-size:13px; color:var(--label-2); font-variant-numeric:tabular-nums;}
   .card .bar{height:6px; background:var(--fill); border-radius:3px; overflow:hidden; margin-top:6px;}
@@ -190,13 +207,26 @@
      bounding box, so painting the grid there made its edge visible as soon as you panned.
      The viewport is always fully covered, and applyTreeZoom() drives background-size /
      -position so the lattice pans and scales in lockstep with the canvas. */
-  .tree-scroll{overflow:hidden; position:relative; height:60vh; min-height:340px;
+  /* Deliberately frameless and full-bleed: a bordered box made the canvas read as a small
+     window onto the tree, when it is meant to be open space. It escapes #app's padding
+     (safe insets included, same trick as the topbar) so it runs to both screen edges. */
+  .tree-scroll{overflow:hidden; position:relative; flex:1 1 auto; min-height:340px;
+    margin:0 calc(-16px - var(--safe-r)) 0 calc(-16px - var(--safe-l));
     touch-action:none; -webkit-user-select:none; user-select:none;
-    border-radius:var(--r-card); box-shadow:inset 0 0 0 .5px var(--separator);
     background-image:radial-gradient(circle, var(--grid-dot) 1.5px, transparent 1.5px);
     background-size:26px 26px;}
+  /* The only two edges left. They are feathered rather than drawn: a strip of the page
+     background fading to transparent, so nodes and the dot grid dissolve into the page
+     instead of being sliced off by a hard line. Painted over the canvas, under the zoom
+     stack (z-index 10), and transparent to pointers so panning still starts anywhere. */
+  .tree-scroll::before, .tree-scroll::after{content:''; position:absolute; left:0; right:0;
+    height:34px; pointer-events:none; z-index:5;}
+  .tree-scroll::before{top:0; background:linear-gradient(var(--bg) 15%, transparent);}
+  .tree-scroll::after{bottom:0; background:linear-gradient(transparent, var(--bg) 85%);}
   /* One grouped capsule with hairline dividers, like the zoom stack on Apple Maps. */
-  .tree-zoom-controls{position:absolute; right:12px; bottom:12px; z-index:10; display:flex; flex-direction:column;
+  /* Kept on #app's gutter, not on the screen edge, now that the canvas is full-bleed. */
+  .tree-zoom-controls{position:absolute; right:calc(16px + var(--safe-r)); bottom:16px; z-index:10;
+    display:flex; flex-direction:column;
     border-radius:var(--r-ctl); overflow:hidden; background:var(--bar-bg);
     -webkit-backdrop-filter:blur(20px) saturate(180%); backdrop-filter:blur(20px) saturate(180%);
     box-shadow:0 0 0 .5px var(--separator), 0 4px 14px rgba(0,0,0,.10);}
@@ -962,12 +992,12 @@ function renderHome(){
     const emoji = stageEmoji(t,pct);
     const glow = pct>=80 && !t.isDaily ? 'glow' : '';
     return `
-    <div class="card" data-open="${t.id}">
+    <div class="card${t.isDaily ? '' : ' has-del'}" data-open="${t.id}">
       <div class="accent" style="background:${color}"></div>
       ${t.isDaily ? '' : `<button class="del" data-del-tree="${t.id}">✕</button>`}
       <div class="body">
         <div class="row1"><span class="stage-emoji ${glow}">${emoji}</span>
-          <div><h3>${esc(t.name)}</h3>
+          <div class="titles"><h3>${esc(t.name)}</h3>
           <p class="goal">${t.goal ? '🎯 '+esc(t.goal) : (t.isDaily?'то, что делаешь каждый день':'')}</p></div>
         </div>
         <div class="meta-row"><span>${p.done}/${p.total} веток</span><span>${pct}%</span></div>
