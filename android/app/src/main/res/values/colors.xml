@@ -1,8 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Same palette as the web app's :root variables. -->
-    <color name="pine">#2F4A3C</color>       <!-- --pine, also manifest.json theme_color -->
-    <color name="paper">#F7F1E5</color>      <!-- --bg (light) -->
-    <color name="trunk">#8A6B3F</color>      <!-- icon trunk -->
-    <color name="ink_dark_bg">#121212</color><!-- --bg (dark) -->
+    <!-- Window backgrounds: same as the web app's --bg, so there's no flash of a
+         different colour before the page paints. -->
+    <color name="bg_light">#F2F2F7</color>   <!-- --bg (light), also manifest.json theme_color -->
+    <color name="bg_dark">#000000</color>    <!-- --bg (dark) -->
+
+    <!-- Launcher icon only. Deliberately still the original mark: the PWA's PNG icons
+         (icon-192/512) carry the same artwork, and the two distributions should not show
+         different icons for the same app. -->
+    <color name="pine">#2F4A3C</color>
+    <color name="trunk">#8A6B3F</color>
+    <color name="paper">#F7F1E5</color>
 </resources>

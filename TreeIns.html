@@ -48,7 +48,15 @@
     --shadow-lift:0 12px 44px rgba(0,0,0,.18);
     --grid-dot:rgba(60,60,67,.13);
     --trunk:#8A6B3F;
+    /* Safe areas. In a browser and in an iOS standalone PWA these come from env().
+       Android WebView reports 0 for the status/gesture bars (env() only ever covers a
+       display cutout there), so the APK wrapper overwrites these four properties inline
+       on <html> with the real window insets — an inline custom property beats this rule,
+       so the same CSS works in both places without a branch. */
+    --safe-t: env(safe-area-inset-top, 0px);
     --safe-b: env(safe-area-inset-bottom, 0px);
+    --safe-l: env(safe-area-inset-left, 0px);
+    --safe-r: env(safe-area-inset-right, 0px);
     --r-card:18px; --r-ctl:12px; --r-small:10px;
     --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
     /* ui-rounded resolves to SF Pro Rounded on Apple platforms — used for numerals */
@@ -82,7 +90,7 @@
   html,body{margin:0;padding:0;}
   body{
     background:var(--bg); color:var(--label); font-family:var(--font);
-    min-height:100vh; font-size:17px; line-height:1.4; letter-spacing:-.01em;
+    min-height:100vh; min-height:100dvh; font-size:17px; line-height:1.4; letter-spacing:-.01em;
     -webkit-text-size-adjust:100%; -webkit-font-smoothing:antialiased;
   }
   /* One shared press feedback: everything tappable dips slightly, the way a
@@ -93,11 +101,19 @@
   button:active, .card:active, .theme-chip:active, .type-chip:active, .streak-pill:active{transform:scale(.97);}
   .card:active{transform:scale(.985);}
 
-  #app{max-width:460px; margin:0 auto; padding:8px 16px calc(96px + var(--safe-b)); min-height:100vh; position:relative; z-index:2;}
+  /* No top padding: the sticky bar has to start at y=0 so its own (blurred) background
+     is what sits behind the status bar. The bar pays the top inset itself. */
+  #app{max-width:460px; margin:0 auto; min-height:100vh; min-height:100dvh; position:relative; z-index:2;
+    padding:0 calc(16px + var(--safe-r)) calc(96px + var(--safe-b)) calc(16px + var(--safe-l));}
 
   /* ---------- top bar ---------- */
-  /* Translucent + blurred like a UINavigationBar, with a hairline underneath. */
-  .topbar{display:flex;align-items:center;justify-content:space-between;margin:0 -16px 14px;padding:8px 16px 10px;
+  /* Translucent + blurred like a UINavigationBar, with a hairline underneath.
+     The negative margins undo #app's horizontal padding so the bar spans the full width;
+     they have to include the same safe insets #app added, or the bar stops short of the
+     screen edge on a device with a cutout. */
+  .topbar{display:flex;align-items:center;justify-content:space-between;
+    margin:0 calc(-16px - var(--safe-r)) 14px calc(-16px - var(--safe-l));
+    padding:calc(10px + var(--safe-t)) calc(16px + var(--safe-r)) 10px calc(16px + var(--safe-l));
     position:sticky;top:0;z-index:5;background:var(--bar-bg);
     -webkit-backdrop-filter:saturate(180%) blur(20px); backdrop-filter:saturate(180%) blur(20px);
     box-shadow:0 .5px 0 var(--separator);}
@@ -122,7 +138,7 @@
   nav.tabs{position:fixed; left:0; right:0; bottom:0; display:flex; justify-content:center; z-index:20;
     background:var(--bar-bg); -webkit-backdrop-filter:saturate(180%) blur(20px);
     backdrop-filter:saturate(180%) blur(20px); box-shadow:0 -.5px 0 var(--separator);
-    padding-bottom:var(--safe-b);}
+    padding-bottom:var(--safe-b); padding-left:var(--safe-l); padding-right:var(--safe-r);}
   nav.tabs .inner{max-width:460px; width:100%; display:flex; padding:6px 8px 4px;}
   nav.tabs button{flex:1; background:none; border:none; display:flex; flex-direction:column; align-items:center; gap:3px;
     padding:4px 4px 6px; cursor:pointer; color:var(--label-2); font-family:var(--font);}
@@ -602,7 +618,15 @@ function effectiveTheme(){
   return pref;
 }
 function applyTheme(){
-  document.documentElement.setAttribute('data-theme', effectiveTheme());
+  const theme = effectiveTheme();
+  document.documentElement.setAttribute('data-theme', theme);
+  // In the APK the page draws underneath the status and gesture bars, so the system has
+  // to be told which way to tint their icons — it can't see our theme, and it defaults to
+  // the OS one, which is wrong the moment someone picks a theme that differs from it.
+  // Absent everywhere except the wrapper (browser, PWA), hence the guard.
+  try{
+    if(window.GoalTreeHost && typeof GoalTreeHost.setTheme === 'function') GoalTreeHost.setTheme(theme);
+  }catch(e){ /* a wrapper without the bridge must not take the app down */ }
 }
 if(window.matchMedia){
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', ()=>{

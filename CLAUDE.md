@@ -102,6 +102,14 @@ DOM, no component framework, no diffing.
   `--separator`, `--tint`, `--bg-elev`), so new UI should reach for those rather than
   inventing a colour. Chrome icons are inline stroked SVGs (`NAV_ICONS` / `ACT_ICONS`);
   emoji are kept only where they're content (tree species, task state).
+- **Safe areas**: `--safe-t/-b/-l/-r` on `:root` default to `env(safe-area-inset-*)`, which
+  covers browsers and the iOS standalone PWA. Android WebView reports those as 0 for the
+  status and gesture bars, so `android/.../MainActivity.java` reads the real window insets
+  and writes the same four properties as *inline* styles on `<html>` (inline beats `:root`,
+  so no branch is needed). Anything pinned to a screen edge — the sticky topbar, the fixed
+  tab bar, sheets, the toast — must spend the matching token, and `#app` has no top padding
+  on purpose so the topbar's own background reaches behind the status bar. Renaming a token
+  silently breaks the APK: it is referenced from Java by string.
   All colors go through CSS custom properties on `:root` /
   `html[data-theme="dark"]` (no hardcoded colors in component CSS) — `applyTheme()` sets
   `data-theme` from `DATA.settings.theme` (`light`/`dark`/`auto`, auto follows

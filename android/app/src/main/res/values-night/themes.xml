@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Dark-mode window background so there's no cream flash before the page paints. -->
+    <!-- Dark-mode window background so there's no light flash before the page paints. -->
     <style name="Theme.GoalTree" parent="Theme.AppCompat.DayNight.NoActionBar">
-        <item name="android:statusBarColor">@color/ink_dark_bg</item>
-        <item name="android:windowBackground">@color/ink_dark_bg</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowBackground">@color/bg_dark</item>
     </style>
 </resources>

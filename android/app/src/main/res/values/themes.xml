@@ -1,9 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- No ActionBar: the web app draws its own chrome, exactly as it does in a browser
-         running with display:standalone. -->
+         running with display:standalone.
+
+         The system bars are transparent because MainActivity puts the window edge to edge
+         and the page paints its own translucent bars behind them; their icon tint is kept
+         in sync with the in-app theme from there, not here. -->
     <style name="Theme.GoalTree" parent="Theme.AppCompat.DayNight.NoActionBar">
-        <item name="android:statusBarColor">@color/pine</item>
-        <item name="android:windowBackground">@color/paper</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowBackground">@color/bg_light</item>
     </style>
 </resources>
