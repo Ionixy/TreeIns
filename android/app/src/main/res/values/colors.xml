@@ -5,10 +5,7 @@
     <color name="bg_light">#F2F2F7</color>   <!-- --bg (light), also manifest.json theme_color -->
     <color name="bg_dark">#000000</color>    <!-- --bg (dark) -->
 
-    <!-- Launcher icon only. Deliberately still the original mark: the PWA's PNG icons
-         (icon-192/512) carry the same artwork, and the two distributions should not show
-         different icons for the same app. -->
-    <color name="pine">#2F4A3C</color>
-    <color name="trunk">#8A6B3F</color>
-    <color name="paper">#F7F1E5</color>
+    <!-- Adaptive-icon background. Must stay identical to the backdrop baked into
+         mipmap-*/ic_launcher_foreground.png, which is full-bleed on top of it. -->
+    <color name="icon_bg">#F8F8F8</color>
 </resources>

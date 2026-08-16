@@ -19,6 +19,12 @@ build step, package manager, bundler, or test suite.
   caching of exactly the files listed in its `ASSETS` array — add new top-level assets
   there if any are introduced, and bump `CACHE_NAME` when `ASSETS` changes so old caches
   get evicted.
+- `art/` — the master artwork every shipped image is derived from, at full resolution:
+  `logo-mark.png` (transparent, no rim) is the in-app mark, inlined into `TreeIns.html`
+  and `install.html` as a base64 data URI so neither page needs an extra file;
+  `app-icon.png` (cyan rim, drop shadow, opaque `#F8F8F8`) is the launcher/PWA icon and is
+  downscaled into `icon-*.png`, `apple-touch-icon.png` and `android/.../mipmap-*/`.
+  Regenerate the derivatives from these rather than editing a downscaled PNG.
 
 ## Running / testing changes
 
