@@ -4,66 +4,88 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Установить GoalTree</title>
-<meta name="theme-color" content="#2F4A3C">
+<meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="icon-192.png">
 <style>
-  /* Same palette as the app, so the install page doesn't look like a different product. */
+  /* Same design language as the app (see TreeIns.html): Apple/iOS semantic tokens,
+     so the install page doesn't look like a different product. */
   :root{
-    --bg:#F7F1E5; --bg-alt:#EDE4D2; --paper:#FBF7EC; --ink:#23281F; --ink-soft:#63614f;
-    --pine:#2F4A3C; --gold:#C9932C; --gold-soft:#EAD199; --line:#C9BC98;
-    --shadow:0 2px 10px rgba(47,74,60,.08),0 1px 2px rgba(47,74,60,.10);
-  }
-  html[data-theme="dark"]{
-    --bg:#121212; --bg-alt:#1A1A1A; --paper:#1E1E1E; --ink:#ECECEC; --ink-soft:#9C9C9C;
-    --pine:#6FAE93; --gold:#E8C874; --gold-soft:#33301E; --line:#333333;
-    --shadow:0 4px 18px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.04);
+    color-scheme:light;
+    --bg:#F2F2F7; --bg-elev:#FFFFFF;
+    --fill:rgba(120,120,128,.12);
+    --label:#000000; --label-2:rgba(60,60,67,.60);
+    --separator:rgba(60,60,67,.20);
+    --tint:#34C759; --tint-text:#248A3D;
+    --orange-soft:rgba(255,149,0,.15);
+    --shadow:0 1px 2px rgba(0,0,0,.05), 0 8px 24px rgba(0,0,0,.06);
+    --trunk:#8A6B3F;
+    --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
   }
   @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
-      --bg:#121212; --bg-alt:#1A1A1A; --paper:#1E1E1E; --ink:#ECECEC; --ink-soft:#9C9C9C;
-      --pine:#6FAE93; --gold:#E8C874; --gold-soft:#33301E; --line:#333333;
-      --shadow:0 4px 18px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.04);
+      color-scheme:dark;
+      --bg:#000000; --bg-elev:#1C1C1E;
+      --fill:rgba(120,120,128,.24);
+      --label:#FFFFFF; --label-2:rgba(235,235,245,.60);
+      --separator:rgba(84,84,88,.65);
+      --tint:#30D158; --tint-text:#30D158;
+      --orange-soft:rgba(255,159,10,.20);
+      --shadow:none;
+      --trunk:#A98757;
     }
   }
-  *{box-sizing:border-box;}
+  html[data-theme="dark"]{
+    color-scheme:dark;
+    --bg:#000000; --bg-elev:#1C1C1E;
+    --fill:rgba(120,120,128,.24);
+    --label:#FFFFFF; --label-2:rgba(235,235,245,.60);
+    --separator:rgba(84,84,88,.65);
+    --tint:#30D158; --tint-text:#30D158;
+    --orange-soft:rgba(255,159,10,.20);
+    --shadow:none;
+    --trunk:#A98757;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{margin:0;padding:0;}
-  body{background:var(--bg); color:var(--ink); min-height:100vh; font-size:16px;
-    font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
-    -webkit-text-size-adjust:100%;}
-  .wrap{max-width:460px; margin:0 auto; padding:28px 16px 48px;}
+  body{background:var(--bg); color:var(--label); min-height:100vh; font-size:17px;
+    font-family:var(--font); line-height:1.4; letter-spacing:-.01em;
+    -webkit-text-size-adjust:100%; -webkit-font-smoothing:antialiased;}
+  .wrap{max-width:460px; margin:0 auto; padding:32px 16px 48px;}
   header{display:flex; align-items:center; gap:10px; margin-bottom:6px;}
-  header svg{width:34px; height:34px; flex:none;}
-  h1{font-size:22px; margin:0; color:var(--pine);}
-  .lede{margin:0 0 22px; font-size:13.5px; font-style:italic; color:var(--ink-soft);}
-  .card{background:var(--paper); border:1px solid var(--line); border-radius:20px;
-    padding:18px; box-shadow:var(--shadow); margin-bottom:16px;}
-  .card h2{margin:0 0 4px; font-size:17px; color:var(--pine);
+  header svg{width:32px; height:32px; flex:none;}
+  h1{font-size:28px; font-weight:700; letter-spacing:-.024em; margin:0; color:var(--label);}
+  .lede{margin:0 0 24px; font-size:15px; color:var(--label-2);}
+  .card{background:var(--bg-elev); border:none; border-radius:18px;
+    padding:18px; box-shadow:var(--shadow); margin-bottom:14px;}
+  .card h2{margin:0 0 6px; font-size:19px; font-weight:600; letter-spacing:-.02em; color:var(--label);
     display:flex; align-items:center; gap:8px;}
-  .card p{margin:0 0 12px; font-size:13.5px; color:var(--ink-soft); line-height:1.5;}
+  .card p{margin:0 0 14px; font-size:15px; color:var(--label-2); line-height:1.45;}
   .btn{display:block; width:100%; text-align:center; text-decoration:none;
-    background:var(--pine); color:var(--paper); border:none; border-radius:12px;
-    padding:14px 18px; font-size:15px; font-family:"Avenir Next","Segoe UI",sans-serif;
-    cursor:pointer; min-height:48px;}
-  .btn.secondary{background:var(--bg-alt); color:var(--ink);}
-  ol{margin:0 0 14px; padding-left:20px; font-size:14px; line-height:1.75;}
-  ol b{color:var(--pine);}
-  .note{font-size:12px; color:var(--ink-soft); line-height:1.5; margin:12px 0 0;
-    font-family:"Avenir Next","Segoe UI",sans-serif;}
-  .warn{border-left:3px solid var(--gold); background:var(--gold-soft); color:var(--ink);
-    padding:12px 14px; border-radius:0 10px 10px 0; font-size:13px; line-height:1.55;
-    margin:20px 0 0; font-family:"Avenir Next","Segoe UI",sans-serif;}
-  .warn b{display:block; margin-bottom:4px;}
+    background:var(--tint); color:#fff; border:none; border-radius:12px;
+    padding:14px 18px; font-size:17px; font-weight:600; font-family:var(--font);
+    cursor:pointer; min-height:50px; transition:transform .12s ease;}
+  .btn:active{transform:scale(.97);}
+  .btn.secondary{background:var(--fill); color:var(--label); font-weight:500;}
+  ol{margin:0 0 16px; padding-left:22px; font-size:16px; line-height:1.7; color:var(--label);}
+  ol b{color:var(--label); font-weight:600;}
+  ol::marker, ol li::marker{color:var(--tint-text);}
+  .note{font-size:13px; color:var(--label-2); line-height:1.45; margin:12px 0 0;}
+  .warn{background:var(--orange-soft); color:var(--label);
+    padding:14px 16px; border-radius:14px; font-size:14px; line-height:1.45;
+    margin:22px 0 0;}
+  .warn b{display:block; margin-bottom:4px; font-weight:600;}
   .hidden{display:none;}
-  footer{margin-top:26px; text-align:center; font-size:12px; color:var(--ink-soft);}
-  footer a{color:var(--pine);}
+  footer{margin-top:28px; text-align:center; font-size:13px; color:var(--label-2);}
+  footer a{color:var(--tint-text); text-decoration:none;}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
     <svg viewBox="0 0 34 34" aria-hidden="true">
-      <path d="M17 4l7 9h-4l6 8h-4l5 9H11l5-9H12l6-8h-4z" fill="var(--pine)"/>
-      <rect x="15" y="27" width="4" height="6" fill="var(--gold)"/>
+      <path d="M17 4l7 9h-4l6 8h-4l5 9H11l5-9H12l6-8h-4z" fill="var(--tint-text)"/>
+      <rect x="15" y="27" width="4" height="6" fill="var(--trunk)"/>
     </svg>
     <h1>GoalTree</h1>
   </header>

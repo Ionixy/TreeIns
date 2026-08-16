@@ -1,6 +1,6 @@
 // Bump this whenever ASSETS changes, otherwise everyone who already installed the app
 // keeps the previous cache and never sees the new files.
-const CACHE_NAME = 'goaltree-v4';
+const CACHE_NAME = 'goaltree-v5';
 const ASSETS = [
   './',              // the Pages root, which index.html answers
   './index.html',

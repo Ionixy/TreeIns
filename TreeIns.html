@@ -7,7 +7,8 @@
 
 <!-- PWA: lets "Add to Home Screen" install this as a standalone app on iOS/Android -->
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#2F4A3C">
+<meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="icon" href="icon-192.png">
 <!-- iOS Safari ignores the manifest for standalone/icon behavior, needs these explicitly -->
@@ -17,113 +18,177 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 
 <style>
+  /* ===========================================================
+     Design language: iOS / Apple HIG.
+     Everything is driven by the semantic tokens below — component
+     rules must never hardcode a colour, or dark mode breaks.
+     Names follow Apple's own vocabulary (label / fill / separator /
+     grouped background / tint) so it stays obvious which token a
+     new piece of UI should reach for.
+     =========================================================== */
   :root{
-    --bg:#F7F1E5; --bg-alt:#EDE4D2; --paper:#FBF7EC; --ink:#23281F; --ink-soft:#63614f;
-    --pine:#2F4A3C; --pine-light:#4C6F5B; --gold:#C9932C; --gold-soft:#EAD199; --rust:#A6542A;
-    --line:#C9BC98; --shadow:0 2px 10px rgba(47,74,60,.08),0 1px 2px rgba(47,74,60,.10);
-    --grid-dot:rgba(35,40,31,.14);
+    color-scheme:light;
+    --bg:#F2F2F7;                      /* systemGroupedBackground — the page */
+    --bg-elev:#FFFFFF;                 /* cards, rows, sheets */
+    --fill:rgba(120,120,128,.12);      /* tracks, chips, plain buttons */
+    --fill-strong:rgba(120,120,128,.20);
+    --label:#000000;
+    --label-2:rgba(60,60,67,.60);
+    --label-3:rgba(60,60,67,.30);
+    --separator:rgba(60,60,67,.20);    /* hairlines are .5px, not 1px */
+    --tint:#34C759;                    /* systemGreen — fills, switches, selection */
+    --tint-text:#248A3D;               /* darker green: readable as text/icon on light */
+    --tint-soft:rgba(52,199,89,.14);
+    --orange:#FF9500;
+    --orange-soft:rgba(255,149,0,.15);
+    --red:#FF3B30;
+    --bar-bg:rgba(242,242,247,.78);    /* translucent nav + tab bars */
+    --sheet-bg:#FFFFFF;
+    --shadow:0 1px 2px rgba(0,0,0,.05), 0 8px 24px rgba(0,0,0,.06);
+    --shadow-lift:0 12px 44px rgba(0,0,0,.18);
+    --grid-dot:rgba(60,60,67,.13);
+    --trunk:#8A6B3F;
     --safe-b: env(safe-area-inset-bottom, 0px);
+    --r-card:18px; --r-ctl:12px; --r-small:10px;
+    --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    /* ui-rounded resolves to SF Pro Rounded on Apple platforms — used for numerals */
+    --font-round:ui-rounded,"SF Pro Rounded",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    --font-mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
   }
   html[data-theme="dark"]{
-    --bg:#121212; --bg-alt:#1A1A1A; --paper:#1E1E1E; --ink:#ECECEC; --ink-soft:#9C9C9C;
-    --pine:#6FAE93; --pine-light:#4F7A67; --gold:#E8C874; --gold-soft:#33301E; --rust:#D98A63;
-    --line:#333333; --shadow:0 4px 18px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.04);
-    --grid-dot:rgba(255,255,255,.10);
+    color-scheme:dark;
+    --bg:#000000;
+    --bg-elev:#1C1C1E;
+    --fill:rgba(120,120,128,.24);
+    --fill-strong:rgba(120,120,128,.36);
+    --label:#FFFFFF;
+    --label-2:rgba(235,235,245,.60);
+    --label-3:rgba(235,235,245,.30);
+    --separator:rgba(84,84,88,.65);
+    --tint:#30D158;
+    --tint-text:#30D158;
+    --tint-soft:rgba(48,209,88,.18);
+    --orange:#FF9F0A;
+    --orange-soft:rgba(255,159,10,.20);
+    --red:#FF453A;
+    --bar-bg:rgba(20,20,22,.80);
+    --sheet-bg:#1C1C1E;
+    --shadow:none;                     /* dark UI separates by elevation, not shadow */
+    --shadow-lift:0 12px 44px rgba(0,0,0,.6);
+    --grid-dot:rgba(235,235,245,.12);
+    --trunk:#A98757;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{margin:0;padding:0;}
   body{
-    background:
-      radial-gradient(circle at 15% 25%, rgba(0,0,0,.025) 0, transparent 2px),
-      radial-gradient(circle at 65% 60%, rgba(0,0,0,.02) 0, transparent 2px),
-      var(--bg);
-    background-size:26px 26px, 34px 34px, auto;
-    color:var(--ink); font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
-    min-height:100vh; font-size:16px; -webkit-text-size-adjust:100%;
+    background:var(--bg); color:var(--label); font-family:var(--font);
+    min-height:100vh; font-size:17px; line-height:1.4; letter-spacing:-.01em;
+    -webkit-text-size-adjust:100%; -webkit-font-smoothing:antialiased;
   }
-  html[data-theme="dark"] body{
-    background:
-      radial-gradient(1px 1px at 40% 30%, rgba(255,255,255,.06), transparent),
-      radial-gradient(1px 1px at 25% 60%, rgba(255,255,255,.05), transparent),
-      var(--bg);
-    background-size:100% 100%, 100% 100%, auto;
+  /* One shared press feedback: everything tappable dips slightly, the way a
+     UIKit control does, instead of each component inventing its own hover. */
+  button, .card, .theme-chip, .type-chip, .color-chip, .picker-row, .switch, .streak-pill{
+    transition:transform .12s ease, background-color .18s ease, opacity .18s ease;
   }
+  button:active, .card:active, .theme-chip:active, .type-chip:active, .streak-pill:active{transform:scale(.97);}
+  .card:active{transform:scale(.985);}
 
-  #app{max-width:460px; margin:0 auto; padding:16px 14px calc(84px + var(--safe-b)); min-height:100vh; position:relative; z-index:2;}
+  #app{max-width:460px; margin:0 auto; padding:8px 16px calc(96px + var(--safe-b)); min-height:100vh; position:relative; z-index:2;}
 
   /* ---------- top bar ---------- */
-  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;position:sticky;top:0;
-    background:linear-gradient(var(--bg) 80%, transparent); padding:6px 0 8px; z-index:5;}
+  /* Translucent + blurred like a UINavigationBar, with a hairline underneath. */
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin:0 -16px 14px;padding:8px 16px 10px;
+    position:sticky;top:0;z-index:5;background:var(--bar-bg);
+    -webkit-backdrop-filter:saturate(180%) blur(20px); backdrop-filter:saturate(180%) blur(20px);
+    box-shadow:0 .5px 0 var(--separator);}
   .brand{display:flex;align-items:center;gap:8px;}
-  .brand-mark{width:30px;height:30px;flex:none;}
-  html[data-theme="dark"] .brand-mark path{fill:#7FB7A3;}
-  html[data-theme="dark"] .brand-mark rect{fill:#C9932C;}
-  .brand h1{font-size:19px;margin:0;letter-spacing:.01em;font-weight:600;color:var(--pine);}
-  .topbar-right{display:flex;align-items:center;gap:8px;}
-  .icon-btn{background:var(--paper);border:1px solid var(--line);border-radius:12px;width:40px;height:40px;
-    display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;box-shadow:var(--shadow);}
-  .streak-pill{display:flex;align-items:center;gap:6px;background:var(--paper);border:1px solid var(--line);
-    border-radius:999px;padding:5px 12px 5px 6px;box-shadow:var(--shadow);cursor:pointer;}
+  .brand-mark{width:28px;height:28px;flex:none;}
+  .brand-mark path{fill:var(--tint-text);}
+  .brand-mark rect{fill:var(--trunk);}
+  .brand h1{font-size:24px;margin:0;letter-spacing:-.022em;font-weight:700;color:var(--label);}
+  .topbar-right{display:flex;align-items:center;gap:10px;}
+  .icon-btn{background:var(--fill);border:none;border-radius:999px;width:34px;height:34px;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--tint-text);padding:0;}
+  .icon-btn svg{width:20px;height:20px;}
+  .streak-pill{display:flex;align-items:center;gap:5px;background:var(--fill);border:none;
+    border-radius:999px;padding:4px 12px 4px 5px;cursor:pointer;}
   .streak-pill .ring{width:26px;height:26px;}
-  .streak-pill .num{font-family:"Menlo","Consolas",monospace;font-size:15px;font-weight:600;color:var(--pine);}
+  .streak-pill .num{font-family:var(--font-round);font-size:16px;font-weight:600;color:var(--label);
+    font-variant-numeric:tabular-nums;}
 
-  /* ---------- bottom nav ---------- */
+  /* ---------- tab bar ---------- */
+  /* Edge-to-edge translucent bar with a hairline on top — the standard
+     UITabBar — rather than a floating island. */
   nav.tabs{position:fixed; left:0; right:0; bottom:0; display:flex; justify-content:center; z-index:20;
-    background:linear-gradient(transparent, var(--bg) 30%); padding-top:14px;}
-  nav.tabs .inner{max-width:460px; width:100%; margin:0 14px; background:var(--paper); border:1px solid var(--line);
-    border-radius:22px; display:flex; box-shadow:0 6px 20px rgba(0,0,0,.16); padding:6px; padding-bottom:calc(6px + var(--safe-b));}
-  nav.tabs button{flex:1; background:none; border:none; display:flex; flex-direction:column; align-items:center; gap:2px;
-    padding:8px 4px; border-radius:16px; cursor:pointer; color:var(--ink-soft); font-family:"Avenir Next","Segoe UI",sans-serif;}
-  nav.tabs button .ic{font-size:19px;}
-  nav.tabs button .t{font-size:10px; letter-spacing:.04em; text-transform:uppercase;}
-  nav.tabs button.active{color:var(--pine); background:var(--gold-soft);}
-  nav.tabs button.active .ic{transform:translateY(-1px) scale(1.1);}
+    background:var(--bar-bg); -webkit-backdrop-filter:saturate(180%) blur(20px);
+    backdrop-filter:saturate(180%) blur(20px); box-shadow:0 -.5px 0 var(--separator);
+    padding-bottom:var(--safe-b);}
+  nav.tabs .inner{max-width:460px; width:100%; display:flex; padding:6px 8px 4px;}
+  nav.tabs button{flex:1; background:none; border:none; display:flex; flex-direction:column; align-items:center; gap:3px;
+    padding:4px 4px 6px; cursor:pointer; color:var(--label-2); font-family:var(--font);}
+  nav.tabs button .ic{display:flex; align-items:center; justify-content:center; height:26px;}
+  nav.tabs button .ic svg{width:25px; height:25px;}
+  nav.tabs button .t{font-size:10.5px; letter-spacing:0; font-weight:500;}
+  nav.tabs button.active{color:var(--tint-text);}
+  nav.tabs button.active .ic svg{stroke-width:2.3;}
+  nav.tabs button:active{transform:none; opacity:.5;}
 
   /* ---------- home / cards ---------- */
   .list{display:flex; flex-direction:column; gap:12px;}
-  .card{background:var(--paper); border:1px solid var(--line); border-radius:26px 30px 24px 30px; padding:16px;
+  .card{background:var(--bg-elev); border:none; border-radius:var(--r-card); padding:14px;
     box-shadow:var(--shadow); position:relative; display:flex; gap:12px; align-items:flex-start; cursor:pointer;}
-  .card .accent{width:5px; align-self:stretch; border-radius:4px; flex:none;}
+  .card .accent{width:4px; align-self:stretch; border-radius:2px; flex:none;}
   .card .body{flex:1; min-width:0;}
-  .card .sprigs{font-size:10px; letter-spacing:2px; margin-bottom:2px; opacity:.8;}
-  .card .row1{display:flex; align-items:center; gap:8px;}
-  .card .stage-emoji{font-size:24px; flex:none; filter:drop-shadow(0 1px 1px rgba(0,0,0,.08));}
-  .card .stage-emoji.glow{filter:drop-shadow(0 0 8px var(--gold));}
-  .card h3{margin:0; font-size:16px; color:var(--pine); line-height:1.25;}
-  .card p.goal{margin:2px 0 0; font-size:12.5px; color:var(--ink-soft); font-style:italic;
+  .card .row1{display:flex; align-items:center; gap:10px;}
+  .card .stage-emoji{font-size:26px; flex:none; line-height:1;}
+  .card .stage-emoji.glow{filter:drop-shadow(0 0 7px var(--tint));}
+  .card h3{margin:0; font-size:17px; font-weight:600; letter-spacing:-.02em; color:var(--label); line-height:1.25;}
+  .card p.goal{margin:1px 0 0; font-size:13px; color:var(--label-2); line-height:1.3;
     overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-  .card .meta-row{display:flex; justify-content:space-between; align-items:center; margin-top:8px;
-    font-family:"Avenir Next","Segoe UI",sans-serif; font-size:11px; color:var(--ink-soft);}
-  .card .bar{height:6px; background:var(--bg-alt); border-radius:3px; overflow:hidden; margin-top:6px;}
-  .card .bar i{display:block; height:100%;}
-  .card .del{position:absolute; top:10px; right:10px; background:none; border:none; color:var(--ink-soft);
-    font-size:13px; cursor:pointer; opacity:.4; padding:6px;}
-  .card .del:hover{opacity:1; color:var(--rust);}
-  .add-card{display:flex; align-items:center; justify-content:center; gap:8px; border-style:dashed;
-    color:var(--ink-soft); padding:18px; font-family:"Avenir Next",sans-serif; font-size:14px;}
-  .add-card .plus{font-size:22px; color:var(--gold);}
+  .card .meta-row{display:flex; justify-content:space-between; align-items:center; margin-top:10px;
+    font-size:13px; color:var(--label-2); font-variant-numeric:tabular-nums;}
+  .card .bar{height:6px; background:var(--fill); border-radius:3px; overflow:hidden; margin-top:6px;}
+  .card .bar i{display:block; height:100%; border-radius:3px;}
+  .card .del{position:absolute; top:8px; right:8px; background:none; border:none; color:var(--label-3);
+    font-size:15px; cursor:pointer; padding:6px; line-height:1;}
+  .card .del:hover{color:var(--red);}
+  .add-card{display:flex; align-items:center; justify-content:center; gap:8px; padding:16px;
+    color:var(--tint-text); font-size:16px; font-weight:500;}
+  .add-card .plus{display:flex; align-items:center; justify-content:center; width:24px; height:24px;
+    border-radius:999px; background:var(--tint-soft); color:var(--tint-text); font-size:19px; line-height:1;
+    padding-bottom:2px;}
 
   /* ---------- tree view ---------- */
-  .back-btn{font-family:"Avenir Next","Segoe UI",sans-serif; font-size:12px; letter-spacing:.05em; text-transform:uppercase;
-    color:var(--ink-soft); background:none; border:none; cursor:pointer; padding:8px 0; display:flex; align-items:center; gap:4px;}
-  .tree-title-block{display:flex; align-items:center; gap:10px; margin:4px 0 4px;}
-  .tree-title-block .stage-emoji{font-size:30px;}
-  .tree-title-block h2{margin:0; font-size:19px; color:var(--pine);}
-  .tree-goal-line{font-size:13px; font-style:italic; color:var(--ink-soft); margin:0 0 14px;}
+  .back-btn{font-size:17px; color:var(--tint-text); background:none; border:none; cursor:pointer;
+    padding:6px 0; display:flex; align-items:center; gap:3px; font-family:var(--font); letter-spacing:-.01em;}
+  .back-btn .chev{font-size:22px; line-height:1; margin-top:-2px;}
+  /* Wraps: a long tree name pushes the two pills onto their own line instead of
+     shoving them off the right edge of the screen. */
+  .tree-title-block{display:flex; align-items:center; flex-wrap:wrap; gap:8px 10px; margin:6px 0 2px;}
+  .tree-title-block .stage-emoji{font-size:30px; line-height:1;}
+  .tree-title-block h2{margin:0; font-size:26px; font-weight:700; letter-spacing:-.024em; color:var(--label);
+    flex:1 1 auto; min-width:0;}
+  .tree-goal-line{font-size:14px; color:var(--label-2); margin:0 0 14px; line-height:1.35;}
 
   /* The dot grid lives on the viewport, not on .tree: .tree is only as big as the tree's
      bounding box, so painting the grid there made its edge visible as soon as you panned.
      The viewport is always fully covered, and applyTreeZoom() drives background-size /
      -position so the lattice pans and scales in lockstep with the canvas. */
-  .tree-scroll{overflow:hidden; position:relative; padding:8px 0 24px; height:60vh; min-height:340px;
+  .tree-scroll{overflow:hidden; position:relative; height:60vh; min-height:340px;
     touch-action:none; -webkit-user-select:none; user-select:none;
+    border-radius:var(--r-card); box-shadow:inset 0 0 0 .5px var(--separator);
     background-image:radial-gradient(circle, var(--grid-dot) 1.5px, transparent 1.5px);
     background-size:26px 26px;}
-  .tree-zoom-controls{position:absolute; right:10px; bottom:10px; z-index:10; display:flex; flex-direction:column; gap:6px;}
-  .zoom-btn{width:36px; height:36px; border-radius:10px; border:1px solid var(--line); background:var(--paper);
-    color:var(--pine); font-size:18px; line-height:1; cursor:pointer; box-shadow:var(--shadow);
-    display:flex; align-items:center; justify-content:center; font-family:"Avenir Next",sans-serif;}
-  .zoom-btn:hover{background:var(--gold-soft);}
+  /* One grouped capsule with hairline dividers, like the zoom stack on Apple Maps. */
+  .tree-zoom-controls{position:absolute; right:12px; bottom:12px; z-index:10; display:flex; flex-direction:column;
+    border-radius:var(--r-ctl); overflow:hidden; background:var(--bar-bg);
+    -webkit-backdrop-filter:blur(20px) saturate(180%); backdrop-filter:blur(20px) saturate(180%);
+    box-shadow:0 0 0 .5px var(--separator), 0 4px 14px rgba(0,0,0,.10);}
+  .zoom-btn{width:38px; height:38px; border:none; background:none; color:var(--tint-text);
+    font-size:19px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center;
+    font-family:var(--font); font-weight:400;}
+  .zoom-btn + .zoom-btn{box-shadow:inset 0 .5px 0 var(--separator);}
+  .zoom-btn:active{background:var(--fill); transform:none;}
   /* absolute-position layout grid: node coordinates come from computeTreeLayout(),
      not from DOM flow, so alignment can't drift with content width/height. */
   .tree{transform-origin:top center; position:relative; margin:0 auto;}
@@ -133,234 +198,266 @@
      DOM measuring and no second set of coordinates to keep in sync. */
   .node-pos{position:absolute; display:flex; flex-direction:column; align-items:center; gap:8px; z-index:1;}
   .node-draggable{cursor:grab; touch-action:none;}
-  .node-draggable.dragging{cursor:grabbing; z-index:10; opacity:.85;}
+  .node-draggable.dragging{cursor:grabbing; z-index:10; opacity:.9;}
+  .node-draggable.dragging .node-card{box-shadow:var(--shadow-lift); transform:scale(1.03);}
   /* Only one panel is open at a time, so lifting just that node above its neighbours is
      enough. Re-flowing the row instead would shove every node below it down the screen
      the moment you tap +, moving the very card you're working on. */
   .node-pos.has-panel{z-index:6;}
   .tree-lines{position:absolute; inset:0; z-index:0; pointer-events:none; overflow:visible;}
-  .tree-lines path{stroke:var(--line); stroke-width:2; fill:none;}
+  .tree-lines path{stroke:var(--label-3); stroke-width:2; fill:none; stroke-linecap:round;}
 
-  .node-card{display:flex; flex-direction:column; align-items:center; gap:5px; background:var(--paper);
-    border:1.5px solid var(--pine-light); border-radius:12px; padding:10px 12px; width:160px;
-    box-shadow:var(--shadow); position:relative; text-align:center;}
-  .node-card.root{color:#F7F1E5;}
-  .node-card.task{border-color:var(--line);}
-  .node-card.task.done{background:var(--gold-soft); border-color:var(--gold);}
+  /* Card metrics are load-bearing: TREE_CARD_MAX_H in the script assumes this padding,
+     these font sizes and both line clamps. Changing them means re-checking that constant. */
+  .node-card{display:flex; flex-direction:column; align-items:center; gap:5px; background:var(--bg-elev);
+    border:.5px solid var(--separator); border-radius:14px; padding:10px 12px; width:160px;
+    box-shadow:var(--shadow); position:relative; text-align:center;
+    transition:box-shadow .15s ease, transform .15s ease;}
+  .node-card.root{color:#FFFFFF; border:none;}
+  .node-card.task.done{background:var(--tint-soft); border-color:transparent;}
 
   /* Both text blocks are line-clamped: an unbounded title or description would make cards
      wildly different heights, which breaks the row rhythm and the edge anchors. */
-  .node-title{font-size:14px; line-height:1.3; font-weight:600; color:var(--ink); overflow:hidden;
-    display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow-wrap:anywhere;}
-  .node-card.root .node-title{font-size:15px; color:#F7F1E5;}
-  .node-desc{font-size:11.5px; line-height:1.35; color:var(--ink-soft); overflow:hidden;
+  .node-title{font-size:14px; line-height:1.3; font-weight:600; letter-spacing:-.01em; color:var(--label);
+    overflow:hidden; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow-wrap:anywhere;}
+  .node-card.root .node-title{font-size:15px; color:#FFFFFF;}
+  .node-desc{font-size:11.5px; line-height:1.35; color:var(--label-2); overflow:hidden;
     display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:3; overflow-wrap:anywhere;}
-  .node-card.root .node-desc{color:rgba(247,241,229,.8);}
-  .node-progress{font-family:"Menlo",monospace; font-size:10px; color:var(--ink-soft);}
-  .node-card.root .node-progress{color:rgba(247,241,229,.75);}
+  .node-card.root .node-desc{color:rgba(255,255,255,.8);}
+  .node-progress{font-family:var(--font-round); font-weight:600; font-size:11px; color:var(--label-2);
+    font-variant-numeric:tabular-nums;}
+  .node-card.root .node-progress{color:rgba(255,255,255,.8);}
 
   .node-toggle-row{display:flex; justify-content:center;}
-  .leaf-toggle{width:34px; height:34px; border-radius:50%; border:none; background:var(--bg-alt);
+  .leaf-toggle{width:34px; height:34px; border-radius:50%; border:none; background:var(--fill);
     font-size:17px; display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none;}
-  .leaf-toggle.bloom{background:var(--gold-soft);}
+  .leaf-toggle.bloom{background:var(--tint); }
 
   /* Icon row: three 30px hit targets + gaps fit inside the 160px card on one line. */
   .node-actions{display:flex; gap:6px; justify-content:center; flex-wrap:nowrap;}
-  .icon-act{width:30px; height:30px; flex:none; border:none; border-radius:8px; background:var(--bg-alt);
-    font-size:14px; line-height:1; display:flex; align-items:center; justify-content:center; cursor:pointer;}
-  .icon-act:hover{background:var(--gold-soft);}
-  .icon-act:focus-visible{outline:2px solid var(--gold); outline-offset:1px;}
-  .node-card.root .icon-act{background:rgba(255,255,255,.18);}
+  .icon-act{width:30px; height:30px; flex:none; border:none; border-radius:9px; background:var(--fill);
+    color:var(--label-2); font-size:14px; line-height:1; display:flex; align-items:center;
+    justify-content:center; cursor:pointer; padding:0;}
+  .icon-act svg{width:16px; height:16px;}
+  .icon-act:focus-visible{outline:2px solid var(--tint); outline-offset:1px;}
+  .node-card.root .icon-act{background:rgba(255,255,255,.22); color:#fff;}
   /* armed delete: one more press on the same trash confirms, Esc backs out */
-  .icon-act.danger-armed{background:var(--rust);}
+  .icon-act.danger-armed{background:var(--red); color:#fff;}
 
   /* Sits under the card as its own block: never inflates the card, always travels with
      the node because it lives in the same wrapper inside #tree-canvas. */
-  .add-panel{display:flex; gap:6px; align-items:center; background:var(--paper);
-    border:1.5px dashed var(--gold); border-radius:12px; padding:8px; width:160px; box-shadow:var(--shadow);}
+  .add-panel{display:flex; gap:6px; align-items:center; background:var(--bg-elev);
+    border-radius:14px; padding:8px; width:160px; box-shadow:var(--shadow-lift);}
   .add-panel input{flex:1; min-width:0; font-family:inherit; font-size:16px; /* <16px makes iOS zoom on focus */
-    border:1px solid var(--line); border-radius:8px; padding:6px 8px; background:var(--bg); color:var(--ink);}
-  .add-panel button{flex:none; width:32px; height:32px; border:none; border-radius:8px; background:var(--pine);
-    color:var(--paper); font-size:16px; line-height:1; cursor:pointer;}
+    border:none; border-radius:9px; padding:7px 9px; background:var(--fill); color:var(--label);}
+  .add-panel input:focus{outline:none; box-shadow:0 0 0 3px var(--tint-soft);}
+  .add-panel button{flex:none; width:32px; height:32px; border:none; border-radius:9px; background:var(--tint);
+    color:#fff; font-size:16px; line-height:1; cursor:pointer;}
 
   /* ---------- stats ---------- */
   .stats-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
-  .stat-tile{background:var(--paper); border:1px solid var(--line); border-radius:20px 24px 18px 24px; padding:16px; box-shadow:var(--shadow);}
-  .stat-tile .val{font-family:"Menlo","Consolas",monospace; font-size:26px; color:var(--pine); font-weight:600;}
-  .stat-tile .lbl{font-family:"Avenir Next","Segoe UI",sans-serif; font-size:10.5px; text-transform:uppercase;
-    letter-spacing:.06em; color:var(--ink-soft); margin-top:4px;}
-  .stat-tile.flame .val{color:var(--gold);}
+  .stat-tile{background:var(--bg-elev); border:none; border-radius:var(--r-card); padding:16px; box-shadow:var(--shadow);}
+  .stat-tile .val{font-family:var(--font-round); font-size:28px; letter-spacing:-.02em; color:var(--label);
+    font-weight:600; font-variant-numeric:tabular-nums;}
+  .stat-tile .lbl{font-size:13px; color:var(--label-2); margin-top:3px; line-height:1.25;}
+  .stat-tile.flame .val{color:var(--orange);}
   .stat-tile.ring-tile{grid-column:1/-1; display:flex; align-items:center; gap:16px;}
   .stat-tile.ring-tile .ring-big{width:64px; height:64px; flex:none;}
-  .season-badge{margin-top:14px; display:flex; align-items:center; gap:10px; background:var(--paper);
-    border:1px solid var(--line); border-radius:18px; padding:14px 16px;}
-  .season-badge .e{font-size:26px;}
-  .season-badge .n{font-family:"Avenir Next",sans-serif; font-size:12px; color:var(--ink-soft);}
-  .season-badge .n b{display:block; color:var(--pine); font-size:14px; font-family:"Iowan Old Style",serif;}
-  .philosophy{margin-top:16px; padding:16px; border-radius:22px 18px 22px 18px; background:var(--pine); color:var(--gold-soft);
-    font-style:italic; font-size:13.5px; text-align:center; line-height:1.5;}
+  .ring-big text{font-family:var(--font-round); font-weight:600; fill:var(--label);}
+  .season-badge{margin-top:12px; display:flex; align-items:center; gap:12px; background:var(--bg-elev);
+    border:none; border-radius:var(--r-card); padding:14px 16px; box-shadow:var(--shadow);}
+  .season-badge .e{font-size:28px;}
+  .season-badge .n{font-size:13px; color:var(--label-2);}
+  .season-badge .n b{display:block; color:var(--label); font-size:17px; font-weight:600; letter-spacing:-.02em;}
+  .philosophy{margin-top:16px; padding:18px 20px; border-radius:var(--r-card); background:var(--tint-soft);
+    color:var(--tint-text); font-size:15px; text-align:center; line-height:1.5;}
 
   /* ---------- settings screen ---------- */
-  .settings-group{background:var(--paper); border:1px solid var(--line); border-radius:20px; padding:6px; margin-bottom:16px;
-    box-shadow:var(--shadow);}
-  .theme-row{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; padding:10px;}
-  .theme-chip{border:1.5px solid var(--line); border-radius:14px; padding:12px 4px; text-align:center; cursor:pointer;
-    font-family:"Avenir Next",sans-serif; background:var(--bg);}
-  .theme-chip .e{font-size:20px; display:block; margin-bottom:2px;}
-  .theme-chip .n{font-size:10.5px; color:var(--ink-soft);}
-  .theme-chip.active{border-color:var(--gold); background:var(--gold-soft);}
-  .setting-row{display:flex; align-items:center; justify-content:space-between; padding:13px 14px;
-    border-top:1px solid var(--line); font-family:"Avenir Next",sans-serif; font-size:13.5px; color:var(--ink);}
-  .settings-group .setting-row:first-child{border-top:none;}
-  .switch{width:42px; height:24px; border-radius:999px; background:var(--bg-alt); border:1px solid var(--line);
-    position:relative; cursor:pointer; flex:none;}
-  .switch::after{content:''; position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:50%;
-    background:var(--paper); box-shadow:0 1px 3px rgba(0,0,0,.25);}
-  .switch.on{background:var(--pine);}
-  .switch.on::after{left:20px; background:var(--gold-soft);}
-  .settings-note{font-family:"Avenir Next",sans-serif; font-size:11.5px; color:var(--ink-soft); text-align:center; margin:6px 0 18px;}
+  /* Inset grouped table view: one rounded card, rows separated by hairlines that
+     start at the content's left edge rather than running the full width. */
+  .settings-group{background:var(--bg-elev); border:none; border-radius:var(--r-card); padding:0; margin-bottom:22px;
+    box-shadow:var(--shadow); overflow:hidden;}
+  /* segmented control */
+  .theme-row{display:grid; grid-template-columns:repeat(3,1fr); gap:2px; padding:2px; margin:12px;
+    background:var(--fill); border-radius:11px;}
+  .theme-chip{border:none; border-radius:9px; padding:7px 4px; text-align:center; cursor:pointer;
+    background:transparent;}
+  .theme-chip .e{font-size:17px; display:block; line-height:1.2;}
+  .theme-chip .n{font-size:12px; color:var(--label-2); font-weight:500;}
+  .theme-chip.active{background:var(--bg-elev); box-shadow:0 1px 3px rgba(0,0,0,.14), 0 0 0 .5px rgba(0,0,0,.04);}
+  .theme-chip.active .n{color:var(--label);}
+  .setting-row{position:relative; display:flex; align-items:center; justify-content:space-between; gap:12px;
+    min-height:46px; padding:9px 16px; font-size:17px; letter-spacing:-.01em; color:var(--label);}
+  .setting-row + .setting-row::before{content:''; position:absolute; left:16px; right:0; top:0;
+    height:.5px; background:var(--separator);}
+  /* iOS switch: 51×31 with a 27px knob that slides on a spring-ish curve. */
+  .switch{width:51px; height:31px; border-radius:999px; background:var(--fill-strong); border:none;
+    position:relative; cursor:pointer; flex:none; transition:background-color .25s ease;}
+  .switch::after{content:''; position:absolute; top:2px; left:2px; width:27px; height:27px; border-radius:50%;
+    background:#fff; box-shadow:0 3px 8px rgba(0,0,0,.15), 0 1px 1px rgba(0,0,0,.16);
+    transition:transform .25s cubic-bezier(.32,.72,0,1);}
+  .switch.on{background:var(--tint);}
+  .switch.on::after{transform:translateX(20px);}
+  /* Inside a sheet the card and the sheet are both white, so the grouped list has to
+     step down to a fill instead of up to an elevated surface. */
+  .modal .settings-group{background:var(--fill); box-shadow:none; margin-bottom:0;}
+  .settings-note{font-size:13px; color:var(--label-2); text-align:center; margin:-10px 4px 20px; line-height:1.4;}
 
-  /* ---------- modal / wizard ---------- */
-  .overlay{position:fixed; inset:0; background:rgba(35,40,31,.5); display:flex; align-items:flex-end; justify-content:center; z-index:50;}
-  .modal{background:var(--paper); border-radius:20px 20px 0 0; padding:22px 20px calc(22px + var(--safe-b));
-    width:100%; max-width:460px; box-shadow:0 -10px 30px rgba(0,0,0,.25); max-height:88vh; overflow-y:auto;}
-  .modal.center{border-radius:20px; margin-bottom:auto; margin-top:auto;}
-  .modal h2{margin:0 0 4px; font-size:18px; color:var(--pine);}
-  .modal p.hint{margin:0 0 14px; font-size:12.5px; color:var(--ink-soft); font-family:"Avenir Next",sans-serif;}
+  /* ---------- modal / sheet ---------- */
+  .overlay{position:fixed; inset:0; background:rgba(0,0,0,.38); display:flex; align-items:flex-end;
+    justify-content:center; z-index:50; -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px);}
+  .modal{background:var(--sheet-bg); border-radius:20px 20px 0 0; padding:20px 20px calc(22px + var(--safe-b));
+    width:100%; max-width:460px; box-shadow:0 -10px 40px rgba(0,0,0,.22); max-height:88vh; overflow-y:auto;
+    -webkit-overflow-scrolling:touch;}
+  /* grabber */
+  .modal:not(.center)::before{content:''; display:block; width:36px; height:5px; border-radius:3px;
+    background:var(--label-3); margin:-8px auto 16px;}
+  .modal.center{border-radius:16px; margin:auto; max-width:360px; padding:22px 20px;
+    box-shadow:var(--shadow-lift);}
+  .modal h2{margin:0 0 4px; font-size:20px; font-weight:700; letter-spacing:-.022em; color:var(--label);}
+  .modal p.hint{margin:0 0 14px; font-size:14px; color:var(--label-2); line-height:1.4;}
   .modal.reminder{text-align:center;}
   /* anywhere-wrap so a long single-word task name can't push the dialog wider than the screen */
-  .modal.reminder .reminder-topic{margin:10px 0 0; font-size:15px; font-style:italic; color:var(--pine);
+  .modal.reminder .reminder-topic{margin:12px 0 0; font-size:17px; font-weight:600; color:var(--tint-text);
     overflow-wrap:anywhere;}
-  .modal label{display:block; font-family:"Avenir Next",sans-serif; font-size:11px; text-transform:uppercase;
-    letter-spacing:.05em; color:var(--ink-soft); margin:14px 0 5px;}
-  .modal input, .modal textarea{width:100%; font-family:inherit; font-size:16px; border:1px solid var(--line);
-    border-radius:10px; padding:11px 12px; background:var(--bg); color:var(--ink);}
-  .modal textarea{resize:vertical; min-height:52px;}
-  .step-dots{display:flex; gap:5px; margin-bottom:10px;}
-  .step-dots i{width:20px; height:4px; border-radius:2px; background:var(--bg-alt); display:block;}
-  .step-dots i.active{background:var(--gold);}
+  .modal label{display:block; font-size:13px; color:var(--label-2); margin:16px 0 6px;}
+  .modal input, .modal textarea{width:100%; font-family:inherit; font-size:17px; border:none;
+    border-radius:var(--r-small); padding:12px 14px; background:var(--fill); color:var(--label);
+    letter-spacing:-.01em;}
+  .modal input:focus, .modal textarea:focus{outline:none; box-shadow:0 0 0 3px var(--tint-soft);}
+  .modal textarea{resize:vertical; min-height:60px; line-height:1.4;}
+  .step-dots{display:flex; gap:5px; margin-bottom:12px;}
+  .step-dots i{width:22px; height:4px; border-radius:2px; background:var(--fill-strong); display:block;
+    transition:background-color .2s ease;}
+  .step-dots i.active{background:var(--tint);}
   .type-grid, .color-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:4px;}
-  .type-chip{border:1.5px solid var(--line); border-radius:12px; padding:12px 4px; text-align:center;
-    background:var(--bg); cursor:pointer; font-family:"Avenir Next",sans-serif; color:var(--ink);}
-  .type-chip .e{font-size:24px; display:block;}
-  .type-chip .n{font-size:10.5px; color:var(--ink-soft); margin-top:2px; display:block;}
-  .type-chip.active{border-color:var(--gold); background:var(--gold-soft);}
+  .type-chip{border:none; border-radius:var(--r-ctl); padding:12px 4px; text-align:center;
+    background:var(--fill); cursor:pointer; color:var(--label);}
+  .type-chip .e{font-size:26px; display:block; line-height:1.15;}
+  .type-chip .n{font-size:12px; color:var(--label-2); margin-top:2px; display:block;}
+  .type-chip.active{background:var(--tint-soft); box-shadow:inset 0 0 0 2px var(--tint);}
+  .type-chip.active .n{color:var(--tint-text);}
   .color-grid{grid-template-columns:repeat(5,1fr);}
-  .color-chip{width:100%; aspect-ratio:1; border-radius:50%; cursor:pointer; border:3px solid transparent;}
-  .color-chip.active{border-color:var(--ink);}
-  .modal-actions{display:flex; justify-content:space-between; gap:8px; margin-top:20px;}
-  .btn{font-family:"Avenir Next",sans-serif; font-size:14px; border:none; border-radius:10px; padding:11px 18px; cursor:pointer; min-height:44px;}
-  .btn.primary{background:var(--pine); color:var(--paper);}
-  .btn.ghost{background:none; color:var(--ink-soft);}
-  .btn.block{width:100%;}
-  .btn.danger{background:var(--rust); color:#fff;}
+  .color-chip{width:100%; aspect-ratio:1; border-radius:50%; cursor:pointer; border:none;}
+  .color-chip.active{box-shadow:0 0 0 2px var(--sheet-bg), 0 0 0 4px var(--label);}
+  .modal-actions{display:flex; justify-content:space-between; gap:10px; margin-top:22px;}
+  .btn{font-family:var(--font); font-size:17px; font-weight:600; letter-spacing:-.01em; border:none;
+    border-radius:var(--r-ctl); padding:12px 20px; cursor:pointer; min-height:46px;}
+  .btn.primary{background:var(--tint); color:#fff;}
+  .btn.ghost{background:none; color:var(--tint-text); font-weight:400;}
+  .btn.block{width:100%; min-height:50px;}
+  .btn.danger{background:var(--red); color:#fff;}
   /* Neutral variant for secondary actions: the bare .btn falls back to the UA's grey
      buttonface, which ignores the theme entirely. */
-  .btn.soft{background:var(--paper); color:var(--ink); border:1px solid var(--line); box-shadow:var(--shadow);}
+  .btn.soft{background:var(--fill); color:var(--label); font-weight:500;}
 
-  .congrats{position:fixed; inset:0; background:rgba(35,40,31,.65); display:flex; align-items:center; justify-content:center;
-    z-index:60; padding:20px;}
-  .congrats-card{background:var(--paper); border-radius:20px; padding:30px 24px; text-align:center; max-width:320px;
-    box-shadow:0 20px 50px rgba(0,0,0,.3);}
-  .congrats-card .big-emoji{font-size:54px; display:block; margin-bottom:10px;}
-  .congrats-card h2{margin:0 0 8px; color:var(--pine); font-size:19px;}
-  .congrats-card p{margin:0 0 18px; color:var(--ink-soft); font-size:13.5px; font-style:italic;}
+  .congrats{position:fixed; inset:0; background:rgba(0,0,0,.5); display:flex; align-items:center; justify-content:center;
+    z-index:60; padding:20px; -webkit-backdrop-filter:blur(4px); backdrop-filter:blur(4px);}
+  .congrats-card{background:var(--sheet-bg); border-radius:20px; padding:28px 24px; text-align:center; max-width:320px;
+    box-shadow:var(--shadow-lift); animation:pop-in .34s cubic-bezier(.32,.72,0,1);}
+  @keyframes pop-in{from{opacity:0; transform:scale(.9);} to{opacity:1; transform:none;}}
+  .congrats-card .big-emoji{font-size:54px; display:block; margin-bottom:12px;}
+  .congrats-card h2{margin:0 0 8px; color:var(--label); font-size:22px; font-weight:700; letter-spacing:-.022em;}
+  .congrats-card p{margin:0 0 20px; color:var(--label-2); font-size:15px; line-height:1.4;}
 
   /* ---------- notebook ---------- */
   .notebook-btn{margin-left:auto; flex:none; display:flex; align-items:center; gap:5px;
-    min-height:30px; padding:5px 10px; border:1px solid var(--line); border-radius:10px;
-    background:var(--paper); color:var(--ink-soft); cursor:pointer; position:relative;
-    font-family:"Avenir Next","Segoe UI",sans-serif; font-size:12px;}
-  .notebook-btn:hover{background:var(--gold-soft); color:var(--pine);}
-  .notebook-btn.has-notes::after{content:''; position:absolute; top:3px; right:3px;
-    width:7px; height:7px; border-radius:50%; background:var(--gold);}
+    min-height:32px; padding:5px 11px; border:none; border-radius:999px;
+    background:var(--fill); color:var(--tint-text); cursor:pointer; position:relative;
+    font-family:var(--font); font-size:13px; font-weight:500;}
+  .notebook-btn svg{width:15px; height:15px; flex:none;}
+  .notebook-btn.has-notes::after{content:''; position:absolute; top:2px; right:2px;
+    width:8px; height:8px; border-radius:50%; background:var(--orange);
+    box-shadow:0 0 0 2px var(--bg);}
 
-  .note-wrap{display:flex; flex-direction:column; border:1px solid var(--line);
-    border-radius:16px; background:var(--paper); overflow:hidden; box-shadow:var(--shadow);}
+  .note-wrap{display:flex; flex-direction:column; border:none;
+    border-radius:var(--r-card); background:var(--bg-elev); overflow:hidden; box-shadow:var(--shadow);}
   /* Pinned above the text so the on-screen keyboard can never cover it. */
   .note-toolbar{position:sticky; top:0; z-index:2; display:flex; flex-wrap:wrap; gap:4px;
-    padding:8px; background:var(--bg-alt); border-bottom:1px solid var(--line);}
-  .fmt-btn{min-width:32px; height:32px; padding:0 7px; border:none; border-radius:8px;
-    background:var(--paper); color:var(--ink); font-size:14px; line-height:1; cursor:pointer;
-    display:flex; align-items:center; justify-content:center;
-    font-family:"Avenir Next","Segoe UI",sans-serif;}
-  .fmt-btn:hover{background:var(--gold-soft);}
-  .fmt-btn.active{background:var(--pine); color:var(--paper);}
-  .fmt-sep{width:1px; align-self:stretch; background:var(--line); margin:0 2px;}
+    padding:8px; background:var(--bar-bg); -webkit-backdrop-filter:blur(20px) saturate(180%);
+    backdrop-filter:blur(20px) saturate(180%); box-shadow:0 .5px 0 var(--separator);}
+  .fmt-btn{min-width:32px; height:32px; padding:0 8px; border:none; border-radius:8px;
+    background:var(--fill); color:var(--label); font-size:14px; line-height:1; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; font-family:var(--font);}
+  .fmt-btn.active{background:var(--tint); color:#fff;}
+  .fmt-sep{width:.5px; align-self:stretch; background:var(--separator); margin:2px 3px;}
 
-  .note-editor{min-height:46vh; padding:14px; outline:none; color:var(--ink);
-    font-size:16px; /* below 16px iOS zooms the page on focus */ line-height:1.6;
-    overflow-wrap:anywhere;}
-  .note-editor:empty::before{content:attr(data-placeholder); color:var(--ink-soft); font-style:italic;}
-  .note-editor h2{font-size:19px; color:var(--pine); margin:.6em 0 .3em;}
+  .note-editor{min-height:46vh; padding:16px; outline:none; color:var(--label);
+    font-size:17px; /* below 16px iOS zooms the page on focus */ line-height:1.55;
+    letter-spacing:-.01em; overflow-wrap:anywhere;}
+  .note-editor:empty::before{content:attr(data-placeholder); color:var(--label-3);}
+  .note-editor h2{font-size:20px; font-weight:700; letter-spacing:-.022em; color:var(--label); margin:.7em 0 .3em;}
   .note-editor ul, .note-editor ol{padding-left:22px; margin:.4em 0;}
   .note-editor li{margin:.15em 0;}
 
-  .node-link{display:inline-block; padding:1px 7px; border-radius:7px; cursor:pointer;
-    background:var(--gold-soft); color:var(--pine); text-decoration:none;
-    border:1px solid var(--gold); font-size:.95em;}
+  .node-link{display:inline-block; padding:1px 8px; border-radius:8px; cursor:pointer;
+    background:var(--tint-soft); color:var(--tint-text); text-decoration:none;
+    border:none; font-size:.95em; font-weight:500;}
   .node-link::before{content:'🌿 ';}
   /* Broken links keep their wording — losing it would lose the note's meaning. */
-  .node-link.broken{background:transparent; color:var(--ink-soft); border-style:dashed;
-    border-color:var(--line); text-decoration:line-through;}
+  .node-link.broken{background:var(--fill); color:var(--label-2);
+    text-decoration:line-through; font-weight:400;}
   .node-link.broken::before{content:'⚠ ';}
 
-  .picker-filter{width:100%; font-family:inherit; font-size:16px; border:1px solid var(--line);
-    border-radius:10px; padding:10px 12px; background:var(--bg); color:var(--ink); margin-bottom:10px;}
-  .picker-list{max-height:46vh; overflow-y:auto; display:flex; flex-direction:column; gap:2px;}
-  .picker-row{text-align:left; border:none; background:none; color:var(--ink); cursor:pointer;
-    padding:9px 10px; border-radius:8px; font-family:inherit; font-size:14px; min-height:38px;}
-  .picker-row:hover{background:var(--gold-soft); color:var(--pine);}
+  .picker-filter{width:100%; font-family:inherit; font-size:17px; border:none;
+    border-radius:var(--r-small); padding:11px 14px; background:var(--fill); color:var(--label); margin-bottom:10px;}
+  .picker-filter:focus{outline:none; box-shadow:0 0 0 3px var(--tint-soft);}
+  .picker-list{max-height:46vh; overflow-y:auto; display:flex; flex-direction:column; gap:1px;
+    -webkit-overflow-scrolling:touch;}
+  .picker-row{text-align:left; border:none; background:none; color:var(--label); cursor:pointer;
+    padding:10px; border-radius:9px; font-family:inherit; font-size:16px; min-height:42px;}
+  .picker-row:active{background:var(--fill); transform:none;}
   .reminder-actions{flex-direction:column; gap:8px;}
 
   /* Flashed for a couple of seconds after a link jump, so it's obvious where you landed. */
-  .node-pos.node-focused .node-card{outline:3px solid var(--gold); outline-offset:3px;}
+  .node-pos.node-focused .node-card{box-shadow:0 0 0 3px var(--tint), var(--shadow-lift);}
 
   /* ---------- sharing ---------- */
-  .share-btn{margin-left:6px;}
-  .export-opts{margin:12px 0 4px; padding:0;}
-  .export-row small{display:block; font-size:11px; color:var(--ink-soft); margin-top:2px;}
+  .share-btn{margin-left:0;}
+  .export-opts{margin:14px 0 4px; padding:0;}
+  .export-row{align-items:flex-start;}
+  .export-row small{display:block; font-size:13px; color:var(--label-2); margin-top:1px;}
   .export-actions{flex-direction:column; gap:8px;}
-  .share-link{width:100%; margin-top:10px; font-family:"Menlo","Consolas",monospace; font-size:12px;
-    border:1px solid var(--line); border-radius:10px; padding:8px; background:var(--bg);
-    color:var(--ink); resize:vertical; word-break:break-all;}
-  .import-facts{display:flex; flex-wrap:wrap; gap:8px; margin:14px 0 4px;
-    font-family:"Avenir Next","Segoe UI",sans-serif; font-size:12px; color:var(--ink-soft);}
-  .import-facts div{background:var(--bg-alt); border-radius:8px; padding:6px 10px;}
-  .import-facts b{color:var(--pine);}
-  .settings-actions{display:flex; flex-direction:column; gap:8px;}
+  .share-link{width:100%; margin-top:12px; font-family:var(--font-mono); font-size:12px;
+    border:none; border-radius:var(--r-small); padding:10px 12px; background:var(--fill);
+    color:var(--label); resize:vertical; word-break:break-all;}
+  .import-facts{display:flex; flex-wrap:wrap; gap:8px; margin:16px 0 4px; font-size:13px; color:var(--label-2);}
+  .import-facts div{background:var(--fill); border-radius:8px; padding:6px 10px;}
+  .import-facts b{color:var(--label);}
+  .settings-actions{display:flex; flex-direction:column; gap:10px;}
 
   /* ---------- AI prompt screen ---------- */
-  .prompt-steps{margin:0 0 12px; padding:14px 16px 14px 32px; background:var(--paper);
-    border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow);
-    font-family:"Avenir Next","Segoe UI",sans-serif; font-size:12.5px; line-height:1.55; color:var(--ink);}
-  .prompt-steps li{margin:0 0 6px;}
+  .prompt-steps{margin:0 0 12px; padding:16px 18px 16px 34px; background:var(--bg-elev);
+    border:none; border-radius:var(--r-card); box-shadow:var(--shadow);
+    font-size:15px; line-height:1.5; color:var(--label);}
+  .prompt-steps li{margin:0 0 8px;}
   .prompt-steps li:last-child{margin-bottom:0;}
-  .prompt-steps li::marker{color:var(--gold); font-weight:600;}
-  .prompt-warn{display:flex; gap:7px; margin:0 0 14px; padding:10px 12px; border-radius:12px;
-    background:var(--gold-soft); color:var(--ink); border:1px solid var(--gold);
-    font-family:"Avenir Next","Segoe UI",sans-serif; font-size:11.5px; line-height:1.45;}
-  .prompt-actions{display:flex; flex-direction:column; gap:8px; margin-bottom:14px;}
+  .prompt-steps li::marker{color:var(--tint-text); font-weight:600;}
+  .prompt-warn{display:flex; gap:8px; margin:0 0 16px; padding:12px 14px; border-radius:var(--r-ctl);
+    background:var(--orange-soft); color:var(--label); border:none; font-size:13px; line-height:1.4;}
+  .prompt-actions{display:flex; flex-direction:column; gap:10px; margin-bottom:14px;}
   /* white-space:pre keeps the JSON sample intact; the scrollbar lives on THIS box, so a
      long sample line can never widen the page itself. */
   .prompt-box{margin:0 0 6px; max-height:42vh; overflow:auto; -webkit-overflow-scrolling:touch;
-    background:var(--paper); border:1px solid var(--line); border-radius:16px; padding:12px 14px;
-    box-shadow:var(--shadow); font-family:"Menlo","Consolas",monospace; font-size:11.5px;
-    line-height:1.55; color:var(--ink); white-space:pre; tab-size:2;
+    background:var(--bg-elev); border:none; border-radius:var(--r-card); padding:14px 16px;
+    box-shadow:var(--shadow); font-family:var(--font-mono); font-size:11.5px;
+    line-height:1.55; color:var(--label); white-space:pre; tab-size:2;
     user-select:text; -webkit-user-select:text;}
-  .paste-box{width:100%; min-height:104px; font-family:"Menlo","Consolas",monospace; font-size:12px;
-    border:1px solid var(--line); border-radius:12px; padding:10px 12px; background:var(--bg);
-    color:var(--ink); resize:vertical; overflow-wrap:anywhere;}
+  .paste-box{width:100%; min-height:104px; font-family:var(--font-mono); font-size:13px;
+    border:none; border-radius:var(--r-ctl); padding:12px 14px; background:var(--bg-elev);
+    box-shadow:var(--shadow); color:var(--label); resize:vertical; overflow-wrap:anywhere;}
+  .paste-box:focus{outline:none; box-shadow:var(--shadow), 0 0 0 3px var(--tint-soft);}
 
-  .toast{position:fixed; left:50%; bottom:calc(86px + var(--safe-b)); transform:translateX(-50%);
-    max-width:420px; width:calc(100% - 28px); z-index:80; padding:12px 14px; border-radius:12px;
-    background:var(--pine); color:var(--paper); box-shadow:0 8px 24px rgba(0,0,0,.3);
-    font-family:"Avenir Next","Segoe UI",sans-serif; font-size:13px; line-height:1.45;}
-  .toast.error{background:var(--rust); color:#fff;}
+  .toast{position:fixed; left:50%; bottom:calc(96px + var(--safe-b)); transform:translateX(-50%);
+    max-width:420px; width:calc(100% - 32px); z-index:80; padding:13px 16px; border-radius:14px;
+    background:rgba(28,28,30,.94); color:#fff; box-shadow:0 8px 30px rgba(0,0,0,.28);
+    -webkit-backdrop-filter:blur(20px); backdrop-filter:blur(20px);
+    font-family:var(--font); font-size:15px; line-height:1.4;}
+  .toast.error{background:rgba(255,59,48,.96);}
 
-  .empty{text-align:center; padding:50px 10px; color:var(--ink-soft); font-style:italic;}
-  .section-title{font-family:"Avenir Next",sans-serif; font-size:12px; text-transform:uppercase; letter-spacing:.08em;
-    color:var(--ink-soft); margin:18px 0 8px 2px;}
+  .empty{text-align:center; padding:50px 10px; color:var(--label-2); font-size:16px;}
+  .section-title{font-size:13px; font-weight:600; letter-spacing:-.005em;
+    color:var(--label-2); margin:22px 0 8px 4px;}
 </style>
 </head>
 <body>
@@ -372,8 +469,10 @@ const TYPES = {
   oak:{e:'🌳', n:'Дуб'}, pine:{e:'🌲', n:'Сосна'}, palm:{e:'🌴', n:'Пальма'},
   sakura:{e:'🌸', n:'Сакура'}, bush:{e:'🌿', n:'Куст'}, maple:{e:'🍁', n:'Клён'}
 };
+// Apple's system colours, in their "accessible" (darker) variants: these fill the root
+// node card, which carries white text on top.
 const COLORS = {
-  green:'#4C6F5B', blue:'#3E6E8E', purple:'#6E5A96', red:'#A6452F', orange:'#C98A2C'
+  green:'#248A3D', blue:'#0064D2', purple:'#8944AB', red:'#D70015', orange:'#C93400'
 };
 const COLOR_NAMES = {green:'Зелёный', blue:'Синий', purple:'Фиолетовый', red:'Красный', orange:'Оранжевый'};
 const SEASONS = [
@@ -385,20 +484,38 @@ function seasonFor(daysActive){ return SEASONS.find(s=>daysActive>=s.days); }
 const ICON_MARK = `<svg viewBox="0 0 34 34" class="brand-mark"><path d="M17 4l7 9h-4l6 8h-4l5 9H11l5-9H12l6-8h-4z" fill="#2F4A3C"/><rect x="15" y="27" width="4" height="6" fill="#8a6b3f"/></svg>`;
 function ringFlame(pct){
   return `<svg viewBox="0 0 34 34" class="ring">
-  <circle cx="17" cy="17" r="14" fill="none" stroke="var(--bg-alt)" stroke-width="3"/>
-  <circle cx="17" cy="17" r="14" fill="none" stroke="var(--gold)" stroke-width="3" stroke-linecap="round"
+  <circle cx="17" cy="17" r="14" fill="none" stroke="var(--fill)" stroke-width="3"/>
+  <circle cx="17" cy="17" r="14" fill="none" stroke="var(--orange)" stroke-width="3" stroke-linecap="round"
     stroke-dasharray="${Math.min(100,pct)*0.879} 999" transform="rotate(-90 17 17)"/>
-  <path d="M17 9c-1 2.6-3.8 4-3.8 7.6a3.8 3.8 0 0 0 7.6 0c0-1.3-.6-2.2-1.2-3 .2 1.2-.4 2-1.1 2-.9 0-1.2-.8-1-1.6.3-1.2-.2-3-.5-5z" fill="var(--gold)"/>
+  <path d="M17 9c-1 2.6-3.8 4-3.8 7.6a3.8 3.8 0 0 0 7.6 0c0-1.3-.6-2.2-1.2-3 .2 1.2-.4 2-1.1 2-.9 0-1.2-.8-1-1.6.3-1.2-.2-3-.5-5z" fill="var(--orange)"/>
 </svg>`;
 }
+// The percentage's font and colour come from CSS (.ring-big text) — a presentation
+// attribute can't reach the theme tokens.
 function ringProgress(pct,cls){
   return `<svg viewBox="0 0 60 60" class="${cls||'ring-big'}">
-  <circle cx="30" cy="30" r="25" fill="none" stroke="var(--bg-alt)" stroke-width="5"/>
-  <circle cx="30" cy="30" r="25" fill="none" stroke="var(--pine)" stroke-width="5" stroke-linecap="round"
+  <circle cx="30" cy="30" r="25" fill="none" stroke="var(--fill)" stroke-width="5"/>
+  <circle cx="30" cy="30" r="25" fill="none" stroke="var(--tint)" stroke-width="5" stroke-linecap="round"
     stroke-dasharray="${Math.min(100,pct)*1.5708} 999" transform="rotate(-90 30 30)"/>
-  <text x="30" y="35" text-anchor="middle" font-size="15" font-family="Menlo,monospace" fill="var(--pine)">${pct}%</text>
+  <text x="30" y="35.5" text-anchor="middle" font-size="15">${pct}%</text>
 </svg>`;
 }
+
+/* Tab-bar glyphs: stroked line icons in the SF Symbols idiom, so the chrome reads as
+   system UI. Emoji stay where they're content (tree species, task state), not chrome. */
+const NAV_ICONS = {
+  forest:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.2 6.4 11h3.1l-4 5.6h13l-4-5.6h3.1z"/><path d="M12 16.6V21"/></svg>`,
+  chart:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-7"/><path d="M22 20H2"/></svg>`,
+  gear:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h9"/><path d="M17 7h3"/><path d="M4 17h5"/><path d="M13 17h7"/><circle cx="15" cy="7" r="2.3"/><circle cx="11" cy="17" r="2.3"/></svg>`
+};
+// Same idiom, one size down, for the per-node action row and the tree-header pills.
+const ACT_ICONS = {
+  edit:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14.5 6.5l3 3"/></svg>`,
+  add:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>`,
+  del:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5h16"/><path d="M9.5 6.5V4.8h5v1.7"/><path d="M6.5 6.5 7.4 20h9.2l.9-13.5"/><path d="M10.3 10v6M13.7 10v6"/></svg>`,
+  note:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 4.5h13v15h-13z"/><path d="M8.8 4.5v15"/><path d="M11.6 9h4M11.6 13h4"/></svg>`,
+  share:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4"/><path d="M8.4 7.4 12 3.8l3.6 3.6"/><path d="M6.5 11.5H5v8.2h14v-8.2h-1.5"/></svg>`
+};
 
 /* ============ STATE ============ */
 const KEY = 'goaltree:data:v2';
@@ -799,16 +916,16 @@ function renderTopbar(){
     <div class="brand">${ICON_MARK}<h1>GoalTree</h1></div>
     <div class="topbar-right">
       <div class="streak-pill" data-go="stats">${ringFlame(Math.min(100,DATA.streak.current))}<span class="num">${DATA.streak.current}</span></div>
-      <button class="icon-btn" data-go="settings">⚙️</button>
+      <button class="icon-btn" data-go="settings" title="Настройки" aria-label="Настройки">${NAV_ICONS.gear}</button>
     </div>
   </div>`;
 }
 
 function renderBottomNav(){
   return `<nav class="tabs"><div class="inner">
-    <button data-go="home" class="${VIEW==='home'||VIEW==='tree'||VIEW==='notebook'?'active':''}"><span class="ic">🌳</span><span class="t">Лес</span></button>
-    <button data-go="stats" class="${VIEW==='stats'?'active':''}"><span class="ic">📊</span><span class="t">Рост</span></button>
-    <button data-go="settings" class="${VIEW==='settings'||VIEW==='aiprompt'?'active':''}"><span class="ic">⚙️</span><span class="t">Настройки</span></button>
+    <button data-go="home" class="${VIEW==='home'||VIEW==='tree'||VIEW==='notebook'?'active':''}"><span class="ic">${NAV_ICONS.forest}</span><span class="t">Лес</span></button>
+    <button data-go="stats" class="${VIEW==='stats'?'active':''}"><span class="ic">${NAV_ICONS.chart}</span><span class="t">Рост</span></button>
+    <button data-go="settings" class="${VIEW==='settings'||VIEW==='aiprompt'?'active':''}"><span class="ic">${NAV_ICONS.gear}</span><span class="t">Настройки</span></button>
   </div></nav>`;
 }
 
@@ -820,20 +937,17 @@ function renderHome(){
     const color = COLORS[t.color||'green'];
     const emoji = stageEmoji(t,pct);
     const glow = pct>=80 && !t.isDaily ? 'glow' : '';
-    const sprigCount = Math.max(1, Math.min(5, p.total || 1));
-    const sprigs = (t.isDaily ? '🍃' : (p.done>0 ? '🌸' : '🌿')).repeat(sprigCount);
     return `
     <div class="card" data-open="${t.id}">
       <div class="accent" style="background:${color}"></div>
       ${t.isDaily ? '' : `<button class="del" data-del-tree="${t.id}">✕</button>`}
       <div class="body">
-        <div class="sprigs">${sprigs}</div>
         <div class="row1"><span class="stage-emoji ${glow}">${emoji}</span>
           <div><h3>${esc(t.name)}</h3>
           <p class="goal">${t.goal ? '🎯 '+esc(t.goal) : (t.isDaily?'то, что делаешь каждый день':'')}</p></div>
         </div>
         <div class="meta-row"><span>${p.done}/${p.total} веток</span><span>${pct}%</span></div>
-        <div class="bar"><i style="width:${pct}%; background:linear-gradient(90deg, ${color}, var(--gold))"></i></div>
+        <div class="bar"><i style="width:${pct}%; background:${color}"></i></div>
         ${!t.isDaily ? `<div class="meta-row" style="margin-top:4px;"><span>активность: ${relDate(t.lastActivity)}</span></div>` : ''}
       </div>
     </div>`;
@@ -854,12 +968,12 @@ function renderTreeView(){
   const p = progressOf(t,t.root); const pct = p.total ? Math.round(p.done/p.total*100) : 0;
   const emoji = stageEmoji(t,pct);
   return `
-  <button class="back-btn" data-go="home">← ко всем деревьям</button>
+  <button class="back-btn" data-go="home"><span class="chev">‹</span>Все деревья</button>
   <div class="tree-title-block"><span class="stage-emoji">${emoji}</span><h2>${esc(t.name)}</h2>
     <button type="button" class="notebook-btn${notebookIsEmpty(t) ? '' : ' has-notes'}"
-      data-open-notebook="${t.id}" title="Блокнот дерева" aria-label="Блокнот дерева">📓<span>Блокнот</span></button>
+      data-open-notebook="${t.id}" title="Блокнот дерева" aria-label="Блокнот дерева">${ACT_ICONS.note}<span>Блокнот</span></button>
     <button type="button" class="notebook-btn share-btn"
-      data-share-tree="${t.id}" title="Поделиться деревом" aria-label="Поделиться деревом">📤<span>Поделиться</span></button>
+      data-share-tree="${t.id}" title="Поделиться деревом" aria-label="Поделиться деревом">${ACT_ICONS.share}<span>Поделиться</span></button>
   </div>
   ${t.goal ? `<p class="tree-goal-line">Итоговая цель: «${esc(t.goal)}» · ${pct}% пройдено</p>` : `<p class="tree-goal-line">${pct}% пройдено</p>`}
   <div class="tree-scroll" id="tree-viewport">
@@ -917,13 +1031,13 @@ function renderNodeActionsRow(tree,node,isRoot){
   const addLabel = isRoot && isDaily ? 'Добавить задание' : 'Добавить ветку';
 
   const actions = [
-    `<button type="button" class="icon-act" data-editnode="${tree.id}|${node.id}" title="Редактировать" aria-label="Редактировать">✏️</button>`,
-    `<button type="button" class="icon-act" data-addform="${node.id}" title="${addLabel}" aria-label="${addLabel}">➕</button>`
+    `<button type="button" class="icon-act" data-editnode="${tree.id}|${node.id}" title="Редактировать" aria-label="Редактировать">${ACT_ICONS.edit}</button>`,
+    `<button type="button" class="icon-act" data-addform="${node.id}" title="${addLabel}" aria-label="${addLabel}">${ACT_ICONS.add}</button>`
   ];
   if(canDelete){
     actions.push(armed
-      ? `<button type="button" class="icon-act danger-armed" data-confirmdel="${tree.id}|${node.id}" title="Нажмите ещё раз, чтобы удалить" aria-label="Подтвердить удаление">🗑️</button>`
-      : `<button type="button" class="icon-act" data-askdel="${node.id}" title="Удалить" aria-label="Удалить">🗑️</button>`);
+      ? `<button type="button" class="icon-act danger-armed" data-confirmdel="${tree.id}|${node.id}" title="Нажмите ещё раз, чтобы удалить" aria-label="Подтвердить удаление">${ACT_ICONS.del}</button>`
+      : `<button type="button" class="icon-act" data-askdel="${node.id}" title="Удалить" aria-label="Удалить">${ACT_ICONS.del}</button>`);
   }
   return `<div class="node-actions">${actions.join('')}</div>`;
 }
@@ -961,9 +1075,11 @@ function renderAddPanel(tree,node){
 
 // Card box is 160 wide; +30 of gutter keeps neighbouring cards visibly apart.
 const TREE_COL_WIDTH = 190;
-// Tallest a card can get, from its CSS: 20 padding + 3 border + 2 title lines (36) +
-// 3 clamped description lines (47) + progress (12) + flower row (34) + icon row (30) +
-// 4 gaps of 5 (20) ≈ 202. Both line clamps are what make this an actual ceiling.
+// Tallest a card can get, from its CSS: 20 padding + 1 border + 2 title lines (36) +
+// 3 clamped description lines (47) + progress (13) + flower row (34) + icon row (30) +
+// 4 gaps of 5 (20) ≈ 204 (measured in the browser: 204.3). Both line clamps are what
+// make this an actual ceiling — re-measure if .node-card's paddings, gaps or font sizes
+// change, this constant has almost no slack left.
 const TREE_CARD_MAX_H = 210;
 // Row pitch = that ceiling plus ~50 of breathing room for the connecting curve.
 const TREE_CARD_ROW_STEP = 250;
@@ -1059,7 +1175,7 @@ function renderStats(){
     <div class="stat-tile ring-tile">
       ${ringProgress(activePct)}
       <div><div class="lbl" style="margin-top:0;">процент активных дней</div>
-        <div style="font-size:11px;color:var(--ink-soft);font-family:'Avenir Next',sans-serif;margin-top:2px;">${s.activeDates.length} из ${totalDays} дней с приложением</div></div>
+        <div style="font-size:13px;color:var(--label-2);margin-top:2px;">${s.activeDates.length} из ${totalDays} дней с приложением</div></div>
     </div>
   </div>
   <div class="season-badge"><span class="e">${season.e}</span><span class="n">Твой лес сейчас в фазе<b>${season.n}</b></span></div>
@@ -1232,7 +1348,7 @@ function renderAiPromptView(){
   // TO — showing a button that throws everywhere else would be worse than no button.
   const canShare = typeof navigator.share === 'function';
   return `
-  <button class="back-btn" data-back-to-settings="1">← в настройки</button>
+  <button class="back-btn" data-back-to-settings="1"><span class="chev">‹</span>Настройки</button>
   <div class="tree-title-block">
     <span class="stage-emoji">🤖</span><h2>Дерево через ИИ</h2>
   </div>
@@ -1268,13 +1384,13 @@ function renderModal(){
         <h2>Шаг 1 · Название</h2>
         <p class="hint">Как назовём это дерево?</p>
         <input type="text" id="wiz-name" value="${esc(WIZ_DRAFT.name)}" placeholder="например, Спорт" autofocus>
-        <div class="modal-actions"><span></span><button class="btn primary" data-wiz-next="1">Далее →</button></div>`;
+        <div class="modal-actions"><span></span><button class="btn primary" data-wiz-next="1">Далее</button></div>`;
     }else if(WIZ_STEP===2){
       body = `
         <h2>Шаг 2 · Цель</h2>
         <p class="hint">Какую конечную цель ты хочешь достичь? Хотя бы примерно — путь к ней ты выстроишь сам.</p>
         <textarea id="wiz-goal" placeholder="например, Поступить в Politecnico di Milano">${esc(WIZ_DRAFT.goal)}</textarea>
-        <div class="modal-actions"><button class="btn ghost" data-wiz-back="1">← Назад</button><button class="btn primary" data-wiz-next="1">Далее →</button></div>`;
+        <div class="modal-actions"><button class="btn ghost" data-wiz-back="1">Назад</button><button class="btn primary" data-wiz-next="1">Далее</button></div>`;
     }else{
       const typeChips = Object.entries(TYPES).map(([k,v])=>
         `<div class="type-chip ${WIZ_DRAFT.type===k?'active':''}" data-wiz-type="${k}"><span class="e">${v.e}</span><span class="n">${v.n}</span></div>`).join('');
@@ -1287,7 +1403,7 @@ function renderModal(){
         <div class="type-grid">${typeChips}</div>
         <label>Цвет</label>
         <div class="color-grid">${colorChips}</div>
-        <div class="modal-actions"><button class="btn ghost" data-wiz-back="1">← Назад</button><button class="btn primary" data-wiz-create="1">Создать 🌱</button></div>`;
+        <div class="modal-actions"><button class="btn ghost" data-wiz-back="1">Назад</button><button class="btn primary" data-wiz-create="1">Создать</button></div>`;
     }
     return `<div class="overlay" data-close-modal="1"><div class="modal" data-stop="1">
       <div class="step-dots">${dots}</div>${body}
@@ -1498,7 +1614,7 @@ function renderNotebookView(){
   const btn = (cmd,label,icon,extra)=>
     `<button type="button" class="fmt-btn" data-fmt="${cmd}" title="${label}" aria-label="${label}"${extra||''}>${icon}</button>`;
   return `
-  <button class="back-btn" data-back-to-tree="1">← к дереву</button>
+  <button class="back-btn" data-back-to-tree="1"><span class="chev">‹</span>К дереву</button>
   <div class="tree-title-block">
     <span class="stage-emoji">📓</span><h2>${esc(t.name)}</h2>
   </div>

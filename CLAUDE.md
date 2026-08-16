@@ -96,7 +96,13 @@ DOM, no component framework, no diffing.
 - **Views**: `VIEW` is one of `'home' | 'tree' | 'stats' | 'settings'`, dispatched in
   `render()`. `MODAL` drives the new-tree wizard (`WIZ_STEP`/`WIZ_DRAFT`) and other
   overlays independently of `VIEW`.
-- **Styling**: all colors go through CSS custom properties on `:root` /
+- **Styling**: the design language is Apple/iOS (HIG) — system font stack, iOS semantic
+  colors, hairline separators, grouped inset lists, translucent blurred nav/tab bars,
+  restrained shadows. Tokens are named after Apple's own vocabulary (`--label`, `--fill`,
+  `--separator`, `--tint`, `--bg-elev`), so new UI should reach for those rather than
+  inventing a colour. Chrome icons are inline stroked SVGs (`NAV_ICONS` / `ACT_ICONS`);
+  emoji are kept only where they're content (tree species, task state).
+  All colors go through CSS custom properties on `:root` /
   `html[data-theme="dark"]` (no hardcoded colors in component CSS) — `applyTheme()` sets
   `data-theme` from `DATA.settings.theme` (`light`/`dark`/`auto`, auto follows
   `prefers-color-scheme`). Keep new UI theme-aware by using existing `--*` variables
