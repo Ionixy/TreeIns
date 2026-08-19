@@ -163,8 +163,12 @@ DOM, no component framework, no diffing.
   sheet turns into a centred dialog since there is no bottom edge to slide from. The topbar
   and the tree canvas break out of the text column to run from the sidebar to the window
   edge — `render()` stamps the view onto `.content` (`view-tree`, …) so the canvas screen
-  can drop the column while its heading keeps it. Prose and settings are capped at ~720px:
-  the extra width the canvas wants makes a line of text or a stranded switch worse. 900px is chosen so a portrait tablet keeps
+  can drop the column while its heading keeps it. One rule holds the layout together:
+  a single column width (`--col`) that every block fills, so every screen shares the same
+  left and right edge. Capping some blocks narrower and letting them sit left produced a
+  ragged staircase; the phone's small side insets on `.section-title`/`.settings-note` are
+  zeroed here for the same reason, and `scrollbar-gutter:stable` stops the centred column
+  jumping half a scrollbar when you switch to a screen that scrolls. 900px is chosen so a portrait tablet keeps
   the touch layout. Hover states live only inside this block.
 - **Safe areas**: `--safe-t/-b/-l/-r` on `:root` default to `env(safe-area-inset-*)`, which
   covers browsers and the iOS standalone PWA. Android WebView reports those as 0 for the

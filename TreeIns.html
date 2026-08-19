@@ -60,6 +60,7 @@
     --safe-r: env(safe-area-inset-right, 0px);
     --r-card:18px; --r-ctl:12px; --r-small:10px;
     --rail:216px;                      /* desktop sidebar width; content padding pays it */
+    --col:1000px;                      /* desktop content column; every block fills it */
     --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
     /* ui-rounded resolves to SF Pro Rounded on Apple platforms — used for numerals */
     --font-round:ui-rounded,"SF Pro Rounded",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
@@ -567,6 +568,11 @@
      the touch layout, where a bottom bar is the right answer.
      ========================================================== */
   @media (min-width:900px){
+    /* Hold the scrollbar's width whether or not a screen scrolls. Without this the
+       centred column shifts by half a scrollbar every time you switch to a longer tab,
+       and the whole layout appears to twitch sideways. */
+    html{scrollbar-gutter:stable;}
+
     /* The tab bar becomes a sidebar: same buttons, laid out as rows. */
     nav.tabs{top:0; bottom:0; right:auto; width:var(--rail); display:block;
       padding:0 0 20px; padding-left:var(--safe-l);
@@ -581,40 +587,41 @@
     nav.tabs button.active{background:var(--tint-soft);}
     nav.tabs button:active{transform:scale(.98); opacity:1;}
 
-    /* Content sits in the space the sidebar leaves. */
+    /* Content sits in the space the sidebar leaves.
+
+       ONE column width, and every block fills it. Giving some blocks a narrower cap and
+       letting them sit left produced a ragged staircase — a row of tiles at one width, a
+       settings group at another, each starting in a different place. Whatever changes
+       here, the rule to keep is that every screen shares the same left and right edge. */
     #app{max-width:none; margin:0;
       padding:0 32px calc(48px + var(--safe-b)) calc(var(--rail) + 32px + var(--safe-l));}
-    #app > .content{max-width:1080px; width:100%; margin:0 auto;}
+    #app > .content{max-width:var(--col); width:100%; margin:0 auto;}
 
-    /* The topbar runs the whole way from the sidebar to the window edge — a bar that
-       stops where the text column stops leaves its hairline hanging in mid-air. */
+    /* The two deliberate exceptions are chrome, not content, and both go edge to edge so
+       they read as a different layer rather than as a block that failed to line up. */
     .topbar{margin:0 calc(-32px - var(--safe-r)) 18px -32px;
       padding:calc(18px + var(--safe-t)) calc(32px + var(--safe-r)) 14px 32px;
       box-shadow:0 .5px 0 var(--separator);}
-
-    /* The canvas is a workspace, not prose: it takes the whole width the window offers,
-       while the heading above it stays lined up with every other screen's column. */
     #app > .content.view-tree{max-width:none;}
     .view-tree > .back-btn, .view-tree > .tree-title-block, .view-tree > .tree-goal-line{
-      max-width:1080px; width:100%; margin-left:auto; margin-right:auto;}
+      max-width:var(--col); width:100%; margin-left:auto; margin-right:auto;}
     .tree-scroll{margin:0 calc(-32px - var(--safe-r)) 0 -32px;}
     .tree-zoom-controls{right:calc(24px + var(--safe-r)); bottom:24px;}
 
     .toast{left:auto; right:32px; transform:none; bottom:32px; width:auto; max-width:420px;}
 
-    /* As many card columns as actually fit, so a wide window fills a row instead of
+    /* As many card columns as actually fit, so a wide window fills its rows instead of
        leaving one card marooned next to an empty half-screen. */
-    .list{display:grid; grid-template-columns:repeat(auto-fill,minmax(290px,1fr));
+    .list{display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
       gap:14px; align-items:start;}
     .stats-grid{grid-template-columns:repeat(4,1fr);}
-    .stat-tile.ring-tile{grid-column:span 2;}
-
-    /* Reading and settings do not benefit from the extra width the canvas wants — a
-       1080px line of prose or a switch stranded from its label is worse, not better. */
-    .rings-card, .season-badge, .philosophy{max-width:720px;}
-    .settings-group, .settings-actions, .settings-note, .note-wrap, .note-title,
-    .prompt-steps, .prompt-warn, .prompt-actions, .prompt-box, .paste-box{max-width:720px;}
     .rings-card{padding:24px 28px;}
+    /* The editor grows with the column; only its own text stays a readable measure. */
+    .note-editor{max-width:760px;}
+    /* Both carry a small side inset that reads as a nudge beside a phone-width card and
+       as a misalignment beside a 1000px one. On this layout they share the column edge. */
+    .section-title{margin-left:0;}
+    .settings-note{margin-left:0; margin-right:0;}
 
     /* A sheet has nothing to slide up from on a desktop, so it becomes a dialog. */
     .overlay{align-items:center;}
@@ -632,11 +639,8 @@
   }
   html[data-theme="dark"] .card:hover{box-shadow:0 0 0 .5px var(--separator);}
 
-  @media (min-width:1600px){
-    #app > .content{max-width:1240px;}
-    .view-tree > .back-btn, .view-tree > .tree-title-block, .view-tree > .tree-goal-line{
-      max-width:1240px;}
-  }
+  /* Only the column token moves, so every screen widens together. */
+  @media (min-width:1600px){ :root{--col:1180px;} }
 </style>
 </head>
 <body>
