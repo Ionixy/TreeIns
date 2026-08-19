@@ -67,6 +67,16 @@ DOM, no component framework, no diffing.
   (`id:'daily'`, `isDaily:true`) has a flat `root.children` with no nested goal
   hierarchy and no drag/collapse behavior — most tree-view logic branches on
   `tree.isDaily`.
+- **Notes**: `DATA.notes[]` of `{id, title, body, treeId, createdAt, updatedAt}`. They used
+  to be one HTML field per tree (`tree.notebook`); `migrateNotesToSection()` moved them and
+  kept `treeId`, so a tree's own button still opens the same text — `openNoteForTree()`
+  makes that note on first use rather than seeding a blank one per tree. A note with no
+  `treeId` stands alone, which is the point of the section. Structure comes from links, not
+  from a parent field: `data-notelink` between notes, `data-nodelink` to a task (only
+  offered when the note belongs to a tree). Both labels are resolved at *display* time from
+  the target's current title, so renaming propagates and a deleted target leaves a broken
+  link that keeps its wording. `sanitizeNotebook()` strips every attribute and restores
+  exactly these two — a link kind it does not know about is silently unwrapped into text.
 - **Two file formats, one app**: sharing a tree writes `{app, format, tree}` and
   deliberately strips ticks, history and notes; a backup writes `{app, kind:'backup',
   format, savedAt, data}` and is the whole of `DATA`, losing nothing. `kind` is what keeps

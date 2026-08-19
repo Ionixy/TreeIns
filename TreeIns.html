@@ -442,6 +442,21 @@
   .congrats-card h2{margin:0 0 8px; color:var(--label); font-size:22px; font-weight:700; letter-spacing:-.022em;}
   .congrats-card p{margin:0 0 20px; color:var(--label-2); font-size:15px; line-height:1.4;}
 
+  /* ---------- notes ---------- */
+  .note-title{width:100%; border:none; background:none; color:var(--label); padding:2px 0 4px;
+    font-family:var(--font); font-size:26px; font-weight:700; letter-spacing:-.024em;
+    margin:6px 0 0;}
+  .note-title:focus{outline:none;}
+  .note-title::placeholder{color:var(--label-3);}
+  .note-row{cursor:pointer; gap:10px;}
+  .note-row .note-row-body{display:flex; flex-direction:column; min-width:0; gap:1px; flex:1;}
+  .note-row .note-row-body b{font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .note-row .note-row-body small{font-size:13px; color:var(--label-2);
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .note-row .chev-right{color:var(--label-3); font-size:20px; line-height:1; flex:none;}
+  .picker-create{color:var(--tint-text); font-weight:500;}
+  .note-link::before{content:'📄 ';}
+
   /* ---------- notebook ---------- */
   .notebook-btn{margin-left:auto; flex:none; display:flex; align-items:center; gap:5px;
     min-height:32px; padding:5px 11px; border:none; border-radius:999px;
@@ -698,7 +713,16 @@ ru: {
   'err.backupNewer':'Копия сделана в более новой версии приложения — обновите GoalTree.',
   'err.backupBroken':'Файл повреждён: в нём нет данных GoalTree.',
 
-  'nav.today':'Сегодня',
+  'nav.today':'Сегодня', 'nav.notes':'Заметки',
+  'notes.title':'Заметки', 'notes.new':'Новая заметка', 'notes.untitled':'Без названия',
+  'notes.empty':'Заметок пока нет. Заведите первую — например, по теме, которую изучаете.',
+  'notes.ofTree':'по дереву «{name}»', 'notes.linked':'Сюда ссылаются',
+  'notes.titlePlaceholder':'Название заметки',
+  'notes.linkNote':'Ссылка на заметку', 'notes.pickNote':'Найти заметку…',
+  'notes.createNamed':'Создать заметку «{name}»',
+  'notes.deleted':'Заметка удалена', 'notes.confirmDelete':'Удалить заметку «{name}»?',
+  'notes.noteGone':'Заметка удалена — переходить некуда.',
+  'notes.backToNotes':'Заметки',
   'today.rings':'Сегодня', 'today.habits':'Привычки', 'today.tasks':'Задачи',
   'today.week':'Неделя', 'today.weekDays':'{n} из {total} дней',
   'today.habitsTitle':'Привычки на сегодня', 'today.noHabits':'Ежедневных заданий пока нет',
@@ -855,7 +879,16 @@ en: {
   'err.backupNewer':'This backup was made by a newer version of the app — update GoalTree.',
   'err.backupBroken':'The file is damaged: there is no GoalTree data in it.',
 
-  'nav.today':'Today',
+  'nav.today':'Today', 'nav.notes':'Notes',
+  'notes.title':'Notes', 'notes.new':'New note', 'notes.untitled':'Untitled',
+  'notes.empty':'No notes yet. Start one — a subject you are studying, for instance.',
+  'notes.ofTree':'on the tree “{name}”', 'notes.linked':'Linked from',
+  'notes.titlePlaceholder':'Note title',
+  'notes.linkNote':'Link to a note', 'notes.pickNote':'Find a note…',
+  'notes.createNamed':'Create a note “{name}”',
+  'notes.deleted':'Note deleted', 'notes.confirmDelete':'Delete the note “{name}”?',
+  'notes.noteGone':'That note was deleted — nowhere to jump to.',
+  'notes.backToNotes':'Notes',
   'today.rings':'Today', 'today.habits':'Habits', 'today.tasks':'Tasks',
   'today.week':'Week', 'today.weekDays':'{n} of {total} days',
   'today.habitsTitle':'Habits for today', 'today.noHabits':'No daily tasks yet',
@@ -955,7 +988,8 @@ const NAV_ICONS = {
   forest:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.2 6.4 11h3.1l-4 5.6h13l-4-5.6h3.1z"/><path d="M12 16.6V21"/></svg>`,
   chart:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-7"/><path d="M22 20H2"/></svg>`,
   gear:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h9"/><path d="M17 7h3"/><path d="M4 17h5"/><path d="M13 17h7"/><circle cx="15" cy="7" r="2.3"/><circle cx="11" cy="17" r="2.3"/></svg>`,
-  today:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="8.4"/><circle cx="12" cy="12" r="4.6"/></svg>`
+  today:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="8.4"/><circle cx="12" cy="12" r="4.6"/></svg>`,
+  notes:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 4.5h13v15h-13z"/><path d="M8.8 8.5h6.4M8.8 12h6.4M8.8 15.5h4"/></svg>`
 };
 // Same idiom, one size down, for the per-node action row and the tree-header pills.
 const ACT_ICONS = {
@@ -987,7 +1021,10 @@ let REMINDER = null;         // {treeId, nodeId} task that just got ticked, show
 let NODE_POPOVER = null;     // {treeId, nodeId} node currently open in the edit popover
 let TREE_ZOOM = {scale:1, x:0, y:0}; // pan/zoom state for the tree canvas, reset whenever a tree is (re)opened
 let TREE_ZOOM_READY = false; // whether the initial centering pass has run for the currently open tree
-let NOTEBOOK_TREE = null;    // tree id whose notebook is open (VIEW==='notebook')
+let NOTE_OPEN = null;        // id of the note being edited (VIEW==='note')
+let NOTE_BACK = 'notes';     // where the editor's back button returns to: 'notes' | 'tree'
+let NOTE_PICKER = null;      // {} while the insert-note-link picker is open
+let NOTE_PICKER_FILTER = '';
 let NOTE_SAVE_TIMER = null;  // debounce handle for the notebook's autosave
 let NOTE_SAVED_RANGE = null; // caret position stashed while the node picker steals focus
 let NODE_PICKER = null;      // {treeId} while the insert-link picker is open
@@ -1051,6 +1088,7 @@ function defaultData(){
       createdAt:todayISO(), lastActivity:null,
       root:{ id:'daily-root', text:'Ежедневные задания', children:[] }
     }],
+    notes:[],
     streak:{ current:0, best:0, lastActiveDate:null, totalCompleted:0, activeDates:[], firstUseDate:todayISO() },
     settings: defaultSettings()
   };
@@ -1086,10 +1124,11 @@ function load(){
   }catch(e){ DATA = defaultData(); }
   if(!DATA.settings) DATA.settings = defaultSettings();
   migrateLanguage();
+  applyLang();                 // before any migration that needs a translated string
+  migrateNotesToSection();
   migrateRemoveCorner();
   checkStreakDecay();
   applyTheme();
-  applyLang();
   render();
   startDayWatcher();
   startEscHandler();
@@ -1113,6 +1152,25 @@ function startNotebookFlush(){
    gets 'auto' from defaultSettings() instead and follows the browser. */
 function migrateLanguage(){
   if(DATA.settings.lang === undefined){ DATA.settings.lang = 'ru'; save(); }
+}
+/* Notes used to be one free-text field per tree, reachable only from inside that tree.
+   They are their own section now, so each becomes a real note with a title and an id, and
+   keeps `treeId` pointing back at the tree it was written for — that button still opens
+   the same text. A note without a treeId belongs to nobody, which is the whole point of
+   the section. Empty notebooks are dropped rather than migrated into blank notes. */
+function migrateNotesToSection(){
+  if(!Array.isArray(DATA.notes)) DATA.notes = [];
+  let changed = false;
+  for(const t of DATA.trees){
+    if(typeof t.notebook !== 'string') continue;
+    if(t.notebook.trim()){
+      DATA.notes.push({ id:uid(), title:treeName(t), body:t.notebook, treeId:t.id,
+                        createdAt:todayISO(), updatedAt:todayISO() });
+    }
+    delete t.notebook;
+    changed = true;
+  }
+  if(changed) save();
 }
 /* The "start point" concept was removed: trees still carrying a leftover corner
    node get it dissolved, with its children promoted to be root's direct children. */
@@ -1197,7 +1255,7 @@ function applyDayRolloverIfNeeded(){
   // keystrokes not yet flushed — every time someone switched apps mid-sentence. Nothing
   // on the notebook screen displays day-dependent data, and leaving it re-renders anyway,
   // so skipping the repaint there costs nothing.
-  if(DATA && VIEW !== 'notebook') render();
+  if(DATA && VIEW !== 'note') render();
   return true;
 }
 
@@ -1230,6 +1288,7 @@ function startEscHandler(){
   document.addEventListener('keydown',(e)=>{
     if(e.key!=='Escape') return;
     // the picker lives outside render(), so it closes itself rather than via a repaint
+    if(NOTE_PICKER){ closeNotePicker(); return; }
     if(NODE_PICKER){ closeNodePicker(); return; }
     if(MODAL === 'restore'){ MODAL = null; RESTORE_DRAFT = null; render(); return; }
     if(!OPEN_FORM && !PENDING_DELETE && !NODE_POPOVER && !REMINDER) return;
@@ -1504,15 +1563,38 @@ function goHome(){ flushNotebook(); VIEW='home'; CURRENT_TREE=null; NODE_POPOVER
 function goToday(){ flushNotebook(); VIEW='today'; REMINDER=null; NODE_PICKER=null; render(); }
 function goStats(){ flushNotebook(); VIEW='stats'; REMINDER=null; NODE_PICKER=null; render(); }
 function goSettings(){ flushNotebook(); VIEW='settings'; REMINDER=null; NODE_PICKER=null; render(); }
-const GO_VIEW = { home:goHome, today:goToday, stats:goStats, settings:goSettings };
+const GO_VIEW = { home:goHome, today:goToday, notes:goNotes, stats:goStats, settings:goSettings };
 // Its own screen rather than a modal: the prompt runs to ~90 lines, which a centred
 // dialog can't show on a phone without turning into a scroll-inside-a-scroll.
 function goAiPrompt(){ flushNotebook(); VIEW='aiprompt'; REMINDER=null; NODE_PICKER=null; render(); }
-function goNotebook(treeId){
-  NOTEBOOK_TREE = treeId; VIEW='notebook';
+function goNotes(){ flushNotebook(); VIEW='notes'; NOTE_OPEN=null; REMINDER=null; NODE_PICKER=null; render(); }
+// The tree's own button: one note per tree, made on first use so an untouched tree never
+// litters the section with a blank entry.
+function openNoteForTree(treeId){
+  const tree = findTree(treeId);
+  if(!tree) return;
+  let note = noteForTree(treeId);
+  if(!note){ note = createNote({treeId, title:treeName(tree)}); save(); }
+  openNote(note.id, 'tree');
+}
+function openNote(noteId, back){
+  flushNotebook();
+  NOTE_OPEN = noteId; NOTE_BACK = back || 'notes'; VIEW='note';
   OPEN_FORM=null; PENDING_DELETE=null; NODE_POPOVER=null; REMINDER=null;
   NODE_PICKER=null; NODE_PICKER_FILTER=''; NOTE_SAVED_RANGE=null;
   render();
+}
+function actionNewNote(){
+  const note = createNote({});
+  save();
+  openNote(note.id, 'notes');
+}
+function actionDeleteNote(id){
+  const note = findNote(id);
+  if(!note) return;
+  DATA.notes = allNotes().filter(n => n.id !== id);
+  NOTE_OPEN = null; save(); goNotes();
+  showToast(tr('notes.deleted'));
 }
 
 /* ============ RENDER ============ */
@@ -1521,7 +1603,8 @@ function render(){
   app.innerHTML = renderTopbar() +
     `<div class="content">` +
     (VIEW==='home' ? renderHome() : VIEW==='today' ? renderToday() : VIEW==='tree' ? renderTreeView()
-      : VIEW==='notebook' ? renderNotebookView()
+      : VIEW==='notes' ? renderNotesView()
+      : VIEW==='note' ? renderNoteView()
       : VIEW==='settings' ? renderSettingsView()
       : VIEW==='aiprompt' ? renderAiPromptView() : renderStats()) +
     `</div>` +
@@ -1546,8 +1629,9 @@ function renderTopbar(){
 
 function renderBottomNav(){
   return `<nav class="tabs"><div class="inner">
-    <button data-go="home" class="${VIEW==='home'||VIEW==='tree'||VIEW==='notebook'?'active':''}"><span class="ic">${NAV_ICONS.forest}</span><span class="t">${tr('nav.forest')}</span></button>
+    <button data-go="home" class="${VIEW==='home'||VIEW==='tree'?'active':''}"><span class="ic">${NAV_ICONS.forest}</span><span class="t">${tr('nav.forest')}</span></button>
     <button data-go="today" class="${VIEW==='today'?'active':''}"><span class="ic">${NAV_ICONS.today}</span><span class="t">${tr('nav.today')}</span></button>
+    <button data-go="notes" class="${VIEW==='notes'||VIEW==='note'?'active':''}"><span class="ic">${NAV_ICONS.notes}</span><span class="t">${tr('nav.notes')}</span></button>
     <button data-go="stats" class="${VIEW==='stats'?'active':''}"><span class="ic">${NAV_ICONS.chart}</span><span class="t">${tr('nav.growth')}</span></button>
     <button data-go="settings" class="${VIEW==='settings'||VIEW==='aiprompt'?'active':''}"><span class="ic">${NAV_ICONS.gear}</span><span class="t">${tr('nav.settings')}</span></button>
   </div></nav>`;
@@ -1594,7 +1678,7 @@ function renderTreeView(){
   return `
   <button class="back-btn" data-go="home"><span class="chev">‹</span>${tr('tree.allTrees')}</button>
   <div class="tree-title-block"><span class="stage-emoji">${emoji}</span><h2>${esc(treeName(t))}</h2>
-    <button type="button" class="notebook-btn${notebookIsEmpty(t) ? '' : ' has-notes'}"
+    <button type="button" class="notebook-btn${treeNoteIsEmpty(t) ? '' : ' has-notes'}"
       data-open-notebook="${t.id}" title="${tr('tree.notebookTitle')}" aria-label="${tr('tree.notebookTitle')}">${ACT_ICONS.note}<span>${tr('tree.notebook')}</span></button>
     <button type="button" class="notebook-btn share-btn"
       data-share-tree="${t.id}" title="${tr('tree.shareTitle')}" aria-label="${tr('tree.shareTitle')}">${ACT_ICONS.share}<span>${tr('tree.share')}</span></button>
@@ -2367,8 +2451,10 @@ function renderReminder(){
 }
 
 /* ============ NOTEBOOK ============
-   Each tree carries its own free-text notes in tree.notebook (HTML). Older saves simply
-   don't have the field, hence the `|| ''` everywhere — no migration, no KEY bump. */
+   Notes live in DATA.notes[] as {id, title, body, treeId}. They used to be one HTML field
+   per tree; migrateNotesToSection() moved them, keeping treeId so a tree's own button
+   still opens the same text. Stored HTML is never trusted — it is sanitised on every read,
+   because the app updates while saved notes stay exactly as they were written. */
 
 const NOTE_MAX_CHARS = 100000; // ~a long chapter; well under the localStorage ceiling
 // Only what the toolbar and the link picker can actually produce. execCommand emits
@@ -2393,14 +2479,18 @@ function sanitizeNotebook(html){
       const tag = n.tagName;
       if(NOTE_KILL_TAGS.has(tag)){ n.remove(); return; }   // images included: one photo as
       if(!NOTE_OK_TAGS.has(tag)){ unwrap(n); return; }     // base64 would eat the quota
+      const noteLink = tag === 'A' ? n.getAttribute('data-notelink') : null;
       const link = tag === 'A' ? n.getAttribute('data-nodelink') : null;
       // Blanket attribute strip kills style, on* handlers, href="javascript:" and the rest
       // in one go; the two attributes a node link needs are put back explicitly.
       [...n.attributes].forEach(a=>n.removeAttribute(a.name));
       if(tag === 'A'){
-        if(!link){ unwrap(n); return; }            // ordinary links become plain text
-        n.setAttribute('data-nodelink', link);
-        n.setAttribute('class', 'node-link');
+        // Two kinds of link survive: to a task, and to another note. Anything else — an
+        // ordinary href, a pasted anchor — becomes plain text.
+        if(!link && !noteLink){ unwrap(n); return; }
+        if(link) n.setAttribute('data-nodelink', link);
+        else n.setAttribute('data-notelink', noteLink);
+        n.setAttribute('class', link ? 'node-link' : 'node-link note-link');
         n.setAttribute('contenteditable', 'false');
       }
     });
@@ -2414,7 +2504,7 @@ function resolveNoteLinks(tree, html){
   const tpl = document.createElement('template');
   tpl.innerHTML = html;
   tpl.content.querySelectorAll('a[data-nodelink]').forEach(a=>{
-    const node = findNode(tree.root, a.getAttribute('data-nodelink'));
+    const node = tree && findNode(tree.root, a.getAttribute('data-nodelink'));
     if(node){
       a.textContent = node.text;
       a.classList.remove('broken');
@@ -2425,6 +2515,17 @@ function resolveNoteLinks(tree, html){
       a.setAttribute('title', tr('note.taskDeleted'));
     }
   });
+  tpl.content.querySelectorAll('a[data-notelink]').forEach(a=>{
+    const note = findNote(a.getAttribute('data-notelink'));
+    if(note){
+      a.textContent = noteTitle(note);
+      a.classList.remove('broken');
+      a.setAttribute('title', noteTitle(note));
+    }else{
+      a.classList.add('broken');
+      a.setAttribute('title', tr('notes.deleted'));
+    }
+  });
   return tpl.innerHTML;
 }
 
@@ -2432,32 +2533,88 @@ function resolveNoteLinks(tree, html){
 // replaces #app.innerHTML must call this first, or the last keystrokes die with the node.
 function flushNotebook(){
   const ed = document.getElementById('note-editor');
-  if(!ed || !NOTEBOOK_TREE) return;
-  const tree = findTree(NOTEBOOK_TREE);
-  if(!tree) return;
+  const note = NOTE_OPEN && findNote(NOTE_OPEN);
+  if(!ed || !note) return;
   clearTimeout(NOTE_SAVE_TIMER); NOTE_SAVE_TIMER = null;
   const html = sanitizeNotebook(ed.innerHTML);
-  if(tree.notebook !== html){ tree.notebook = html; save(); }
+  const titleEl = document.getElementById('note-title');
+  const title = titleEl ? titleEl.value.trim() : note.title;
+  if(note.body !== html || note.title !== title){
+    note.body = html; note.title = title; note.updatedAt = todayISO();
+    save();
+  }
 }
 
-function notebookIsEmpty(tree){
-  const html = tree && tree.notebook || '';
-  const tpl = document.createElement('template'); tpl.innerHTML = html;
-  return !(tpl.content.textContent || '').trim() && !tpl.content.querySelector('a[data-nodelink]');
+function allNotes(){ return Array.isArray(DATA.notes) ? DATA.notes : (DATA.notes = []); }
+function findNote(id){ return allNotes().find(n => n.id === id) || null; }
+function noteForTree(treeId){ return allNotes().find(n => n.treeId === treeId) || null; }
+function createNote(fields){
+  const note = Object.assign({ id:uid(), title:'', body:'', treeId:null,
+                               createdAt:todayISO(), updatedAt:todayISO() }, fields||{});
+  allNotes().push(note);
+  return note;
+}
+function noteTitle(note){ return (note && note.title || '').trim() || tr('notes.untitled'); }
+function noteIsEmpty(note){
+  const tpl = document.createElement('template'); tpl.innerHTML = (note && note.body) || '';
+  return !(note && note.title || '').trim() && !(tpl.content.textContent || '').trim()
+    && !tpl.content.querySelector('a[data-nodelink],a[data-notelink]');
+}
+function treeNoteIsEmpty(tree){
+  const n = tree && noteForTree(tree.id);
+  return !n || noteIsEmpty(n);
+}
+// Plain text for the list's second line, cheap enough to run per row.
+function noteSnippet(note){
+  const tpl = document.createElement('template'); tpl.innerHTML = (note && note.body) || '';
+  return (tpl.content.textContent || '').replace(/\s+/g,' ').trim().slice(0, 90);
+}
+// Which notes point at this one. The links are the structure here — there is no separate
+// parent field to disagree with them.
+function backlinksTo(noteId){
+  return allNotes().filter(n => n.id !== noteId &&
+    new RegExp('data-notelink="' + noteId + '"').test(n.body || ''));
 }
 
-function renderNotebookView(){
-  const t = findTree(NOTEBOOK_TREE);
-  if(!t) return `<div class="empty">${tr('tree.notFound')}</div>`;
-  const body = resolveNoteLinks(t, sanitizeNotebook(t.notebook || ''));
+function renderNotesView(){
+  const notes = allNotes().slice().sort((a,b)=>
+    String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')) || noteTitle(a).localeCompare(noteTitle(b)));
+  const rows = notes.map(n=>{
+    const tree = n.treeId && findTree(n.treeId);
+    const snip = noteSnippet(n);
+    return `<div class="setting-row note-row" data-open-note="${n.id}">
+      <span class="note-row-body">
+        <b>${esc(noteTitle(n))}</b>
+        <small>${tree ? esc(tr('notes.ofTree',{name:treeName(tree)})) : esc(snip)}</small>
+      </span>
+      <span class="chev-right">›</span>
+    </div>`;
+  }).join('');
+  return `
+  <div class="section-title">${tr('notes.title')}</div>
+  ${notes.length ? `<div class="settings-group">${rows}</div>`
+                 : `<p class="empty">${tr('notes.empty')}</p>`}
+  <div class="settings-actions">
+    <button class="btn soft block" data-new-note="1">＋ ${tr('notes.new')}</button>
+  </div>`;
+}
+
+function renderNoteView(){
+  const note = findNote(NOTE_OPEN);
+  if(!note) return `<div class="empty">${tr('notes.deleted')}</div>`;
+  const tree = note.treeId ? findTree(note.treeId) : null;
+  const body = resolveNoteLinks(tree, sanitizeNotebook(note.body || ''));
+  const links = backlinksTo(note.id);
   const btn = (cmd,label,icon,extra)=>
     `<button type="button" class="fmt-btn" data-fmt="${cmd}" title="${label}" aria-label="${label}"${extra||''}>${icon}</button>`;
+  const back = NOTE_BACK === 'tree' && tree
+    ? `<button class="back-btn" data-back-to-tree="1"><span class="chev">‹</span>${tr('note.backToTree')}</button>`
+    : `<button class="back-btn" data-go="notes"><span class="chev">‹</span>${tr('notes.backToNotes')}</button>`;
   return `
-  <button class="back-btn" data-back-to-tree="1"><span class="chev">‹</span>${tr('note.backToTree')}</button>
-  <div class="tree-title-block">
-    <span class="stage-emoji">📓</span><h2>${esc(treeName(t))}</h2>
-  </div>
-  <p class="tree-goal-line">${tr('note.sub')}</p>
+  ${back}
+  <input type="text" id="note-title" class="note-title" value="${esc(note.title||'')}"
+     placeholder="${tr('notes.titlePlaceholder')}" aria-label="${tr('notes.titlePlaceholder')}">
+  <p class="tree-goal-line">${tree ? tr('notes.ofTree',{name:esc(treeName(tree))}) : tr('note.sub')}</p>
   <div class="note-wrap">
     <div class="note-toolbar" id="note-toolbar">
       ${btn('formatBlock',tr('note.heading'),'H')}
@@ -2467,10 +2624,17 @@ function renderNotebookView(){
       ${btn('insertUnorderedList',tr('note.ul'),'•')}
       ${btn('insertOrderedList',tr('note.ol'),'1.')}
       <span class="fmt-sep"></span>
-      <button type="button" class="fmt-btn" data-insert-link="1" title="${tr('note.link')}" aria-label="${tr('note.link')}">🔗</button>
+      ${tree ? `<button type="button" class="fmt-btn" data-insert-link="1" title="${tr('note.link')}" aria-label="${tr('note.link')}">🔗</button>` : ''}
+      <button type="button" class="fmt-btn" data-insert-notelink="1" title="${tr('notes.linkNote')}" aria-label="${tr('notes.linkNote')}">📄</button>
     </div>
     <div class="note-editor" id="note-editor" contenteditable="true" role="textbox" aria-multiline="true"
          aria-label="${tr('note.aria')}" data-placeholder="${tr('note.placeholder')}">${body}</div>
+  </div>
+  ${links.length ? `<div class="section-title">${tr('notes.linked')}</div>
+    <div class="settings-group">${links.map(n=>`<div class="setting-row note-row" data-open-note="${n.id}">
+      <span class="note-row-body"><b>${esc(noteTitle(n))}</b></span><span class="chev-right">›</span></div>`).join('')}</div>` : ''}
+  <div class="settings-actions">
+    <button class="btn soft block" data-del-note="${note.id}">🗑 ${tr('common.delete')}</button>
   </div>`;
 }
 
@@ -2495,8 +2659,60 @@ function pickerRowsHtml(tree){
   return rows.length ? rows.join('') : `<p class="hint">${tr('note.nothingFound')}</p>`;
 }
 
+/* Same shell as the task picker, and mounted the same way — straight into the DOM rather
+   than through render(), so the editor keeps its live caret while the list steals focus.
+   Unlike that one this can also create what it cannot find: writing a note and linking a
+   new sub-note from inside it is the whole point of the section. */
+function openNotePicker(){
+  closeNodePicker(); closeNotePicker();
+  NOTE_PICKER = {}; NOTE_PICKER_FILTER = '';
+  const wrap = document.createElement('div');
+  wrap.className = 'overlay';
+  wrap.id = 'note-picker';
+  wrap.innerHTML = `<div class="modal center">
+    <h2>${tr('notes.linkNote')}</h2>
+    <input type="text" id="note-picker-filter" class="picker-filter" placeholder="${tr('notes.pickNote')}" aria-label="${tr('notes.pickNote')}">
+    <div class="picker-list" id="note-picker-list">${notePickerRowsHtml()}</div>
+    <div class="modal-actions"><button class="btn ghost block" id="note-picker-cancel">${tr('common.cancel')}</button></div>
+  </div>`;
+  document.getElementById('app').appendChild(wrap);
+  wrap.addEventListener('click',(e)=>{ if(e.target === wrap) closeNotePicker(); });
+  wrap.querySelector('#note-picker-cancel').addEventListener('click', closeNotePicker);
+  const filter = wrap.querySelector('#note-picker-filter');
+  filter.addEventListener('input',()=>{
+    NOTE_PICKER_FILTER = filter.value;
+    wrap.querySelector('#note-picker-list').innerHTML = notePickerRowsHtml();
+    bindNotePickerRows(wrap);
+  });
+  bindNotePickerRows(wrap);
+  filter.focus();
+}
+function notePickerRowsHtml(){
+  const q = NOTE_PICKER_FILTER.trim().toLowerCase();
+  const rows = allNotes()
+    .filter(n => n.id !== NOTE_OPEN && (!q || noteTitle(n).toLowerCase().includes(q)))
+    .map(n => `<button type="button" class="picker-row" data-picknote="${n.id}">${esc(noteTitle(n))}</button>`);
+  if(q) rows.push(`<button type="button" class="picker-row picker-create" data-createnote="${esc(q)}">${tr('notes.createNamed',{name:esc(NOTE_PICKER_FILTER.trim())})}</button>`);
+  return rows.length ? rows.join('') : `<p class="hint">${tr('note.nothingFound')}</p>`;
+}
+function bindNotePickerRows(wrap){
+  wrap.querySelectorAll('[data-picknote]').forEach(b=>b.addEventListener('click',()=>{
+    const id = b.dataset.picknote; closeNotePicker(); insertNoteLink(id);
+  }));
+  wrap.querySelectorAll('[data-createnote]').forEach(b=>b.addEventListener('click',()=>{
+    const title = NOTE_PICKER_FILTER.trim();
+    const note = createNote({title});
+    save(); closeNotePicker(); insertNoteLink(note.id);
+  }));
+}
+function closeNotePicker(){
+  const el = document.getElementById('note-picker');
+  if(el) el.remove();
+  NOTE_PICKER = null; NOTE_PICKER_FILTER = '';
+}
+
 function openNodePicker(){
-  const tree = findTree(NOTEBOOK_TREE);
+  const tree = openNoteTree();
   if(!tree) return;
   closeNodePicker();
   NODE_PICKER = {treeId: tree.id}; NODE_PICKER_FILTER = '';
@@ -2587,8 +2803,9 @@ function serializeTreeForShare(tree, opts){
     color: COLORS[tree.color] ? tree.color : 'green',
     root: packNode(tree.root)
   };
-  if(withNotes && tree.notebook){
-    packed.notebook = sanitizeNotebook(tree.notebook).slice(0, SHARE_LIM.notebook);
+  const ownNote = noteForTree(tree.id);
+  if(withNotes && ownNote && ownNote.body){
+    packed.notebook = sanitizeNotebook(ownNote.body).slice(0, SHARE_LIM.notebook);
   }
   return { app: SHARE_APP, format: SHARE_FORMAT, exportedAt: new Date().toISOString(), tree: packed };
 }
@@ -2663,7 +2880,7 @@ function buildTreeFromPayload(payload, nameOverride){
   if(typeof t.notebook === 'string' && t.notebook){
     // sanitise BEFORE storing, not at display time: this HTML came from a stranger
     const clean = sanitizeNotebook(t.notebook.slice(0, SHARE_LIM.notebook));
-    tree.notebook = remapNoteLinks(clean, idMap);
+    createNote({ treeId: tree.id, title: tree.name, body: remapNoteLinks(clean, idMap) });
   }
   return tree;
 }
@@ -2847,6 +3064,17 @@ function normalizeRestored(d){
   const dailies = d.trees.filter(t => t.isDaily);
   if(!dailies.length) d.trees.unshift(defaultData().trees[0]);
   else dailies.slice(1).forEach(t => { t.isDaily = false; });
+  // A backup taken before notes existed simply has none; anything malformed is dropped
+  // rather than allowed to reach the editor.
+  d.notes = (Array.isArray(d.notes) ? d.notes : []).filter(n => n && typeof n === 'object')
+    .map(n => {
+      if(!n.id || seen.has(n.id)) n.id = uid();
+      seen.add(n.id);
+      if(typeof n.title !== 'string') n.title = '';
+      if(typeof n.body !== 'string') n.body = '';
+      if(n.treeId && !d.trees.some(t => t.id === n.treeId)) n.treeId = null;  // orphaned
+      return n;
+    });
   if(!d.streak || typeof d.streak !== 'object') d.streak = defaultData().streak;
   if(!Array.isArray(d.streak.activeDates)) d.streak.activeDates = [];
   if(!d.settings || typeof d.settings !== 'object') d.settings = defaultSettings();
@@ -2858,7 +3086,7 @@ function actionRestoreBackup(){
   const when = RESTORE_DRAFT.savedAt;
   DATA = normalizeRestored(RESTORE_DRAFT.data);
   RESTORE_DRAFT = null; MODAL = null;
-  CURRENT_TREE = null; NOTEBOOK_TREE = null; NODE_POPOVER = null; OPEN_FORM = null;
+  CURRENT_TREE = null; NOTE_OPEN = null; NODE_POPOVER = null; OPEN_FORM = null;
   VIEW = 'home';
   if(!save()) return;                 // storage full: the toast from save() already explains
   applyTheme(); applyLang(); render();
@@ -3050,18 +3278,27 @@ function bindEvents(){
   });
 
   /* ---- notebook ---- */
+  app.querySelectorAll('[data-open-note]').forEach(el=>el.addEventListener('click',()=>
+    openNote(el.dataset.openNote, VIEW === 'note' ? NOTE_BACK : 'notes')));
+  const newNote = app.querySelector('[data-new-note]');
+  if(newNote) newNote.addEventListener('click', actionNewNote);
+  app.querySelectorAll('[data-del-note]').forEach(el=>el.addEventListener('click',()=>{
+    const note = findNote(el.dataset.delNote);
+    if(note && confirmSafe(tr('notes.confirmDelete',{name:noteTitle(note)}))) actionDeleteNote(note.id);
+  }));
   app.querySelectorAll('[data-open-notebook]').forEach(el=>el.addEventListener('click',()=>{
-    goNotebook(el.dataset.openNotebook);
+    openNoteForTree(el.dataset.openNotebook);
   }));
   const noteBackBtn = app.querySelector('[data-back-to-tree]');
   if(noteBackBtn) noteBackBtn.addEventListener('click',()=>{
-    if(NOTEBOOK_TREE) openTree(NOTEBOOK_TREE); else goHome();
+    const tree = openNoteTree();
+    if(tree) openTree(tree.id); else goNotes();
   });
   app.querySelectorAll('[data-reminder-notebook]').forEach(el=>el.addEventListener('click',()=>{
     const [tid,nid] = el.dataset.reminderNotebook.split('|');
     appendNodeLinkToNotebook(tid,nid);
     REMINDER = null;
-    goNotebook(tid);
+    openNoteForTree(tid);
   }));
   bindNotebookEditor();
 
@@ -3278,13 +3515,18 @@ function bindNotebookEditor(){
     clearTimeout(NOTE_SAVE_TIMER);
     // Autosave never re-renders: doing so would wipe the caret out from under the typist.
     NOTE_SAVE_TIMER = setTimeout(()=>{
-      const tree = findTree(NOTEBOOK_TREE);
-      if(!tree) return;
+      const note = NOTE_OPEN && findNote(NOTE_OPEN);
+      if(!note) return;
       const html = sanitizeNotebook(ed.innerHTML);
       if((ed.textContent || '').length > NOTE_MAX_CHARS){
         showToast(tr('note.limitReached'), 'error');
       }
-      if(tree.notebook !== html){ tree.notebook = html; save(); }
+      const titleEl = document.getElementById('note-title');
+      const title = titleEl ? titleEl.value.trim() : note.title;
+      if(note.body !== html || note.title !== title){
+        note.body = html; note.title = title; note.updatedAt = todayISO();
+        save();
+      }
     }, 500);
   };
 
@@ -3328,6 +3570,12 @@ function bindNotebookEditor(){
       stashNoteRange();   // captured while the editor is still focused
       openNodePicker();
     });
+    const noteLinkBtn = toolbar.querySelector('[data-insert-notelink]');
+    if(noteLinkBtn) noteLinkBtn.addEventListener('mousedown',(e)=>{
+      e.preventDefault();
+      stashNoteRange();
+      openNotePicker();
+    });
   }
 
   ed.addEventListener('input', ()=>{ scheduleSave(); syncToolbar(); });
@@ -3357,23 +3605,35 @@ function bindNotebookEditor(){
   // so Backspace removes the whole thing, and a plain tap navigates instead of editing.
   // There are no modifier keys on a phone, so tap-to-follow is the only workable choice.
   ed.addEventListener('click',(e)=>{
+    const noteA = e.target.closest('a[data-notelink]');
+    if(noteA){
+      e.preventDefault();
+      const id = noteA.getAttribute('data-notelink');
+      if(!findNote(id)){ showToast(tr('notes.noteGone')); return; }
+      openNote(id, NOTE_BACK);   // keeps the way back where the reader came in
+      return;
+    }
     const a = e.target.closest('a[data-nodelink]');
     if(!a) return;
     e.preventDefault();
     const id = a.getAttribute('data-nodelink');
-    const tree = findTree(NOTEBOOK_TREE);
+    const tree = openNoteTree();
     if(!tree || !findNode(tree.root, id)){
       showToast(tr('note.gone'));
       return;
     }
     flushNotebook();
-    PENDING_FOCUS_NODE = {treeId: NOTEBOOK_TREE, nodeId: id};
-    openTree(NOTEBOOK_TREE);
+    PENDING_FOCUS_NODE = {treeId: tree.id, nodeId: id};
+    openTree(tree.id);
   });
 
   syncToolbar();
 }
 
+function openNoteTree(){
+  const note = NOTE_OPEN && findNote(NOTE_OPEN);
+  return note && note.treeId ? findTree(note.treeId) : null;
+}
 function stashNoteRange(){
   const sel = window.getSelection();
   const ed = document.getElementById('note-editor');
@@ -3382,14 +3642,18 @@ function stashNoteRange(){
   }
 }
 
-function insertNodeLink(nodeId){
-  const tree = findTree(NOTEBOOK_TREE);
-  const node = tree && findNode(tree.root, nodeId);
-  closeNodePicker();
+function insertNoteLink(noteId){
+  const note = findNote(noteId);
+  if(!note) return;
+  insertLinkHtml(`<a class="node-link note-link" data-notelink="${esc(noteId)}" contenteditable="false">${esc(noteTitle(note))}</a>&nbsp;`);
+}
+// Shared by both link kinds: put the caret back where it was before the picker stole
+// focus, then insert. The editor was never re-rendered, so the stashed range still points
+// at live nodes.
+function insertLinkHtml(html){
   const ed = document.getElementById('note-editor');
-  if(!tree || !node || !ed) return;
+  if(!ed) return;
   ed.focus();
-  // The editor was never re-rendered, so the stashed range still points at live nodes.
   const sel = window.getSelection();
   sel.removeAllRanges();
   if(NOTE_SAVED_RANGE && ed.contains(NOTE_SAVED_RANGE.startContainer)){
@@ -3397,10 +3661,17 @@ function insertNodeLink(nodeId){
   }else{
     const r = document.createRange(); r.selectNodeContents(ed); r.collapse(false); sel.addRange(r);
   }
-  // Only the id is stored; the label is re-resolved from the node on every open.
-  const html = `<a class="node-link" data-nodelink="${esc(node.id)}" contenteditable="false">${esc(node.text)}</a>&nbsp;`;
   try{ document.execCommand('insertHTML', false, html); }catch(_){}
   flushNotebook();
+}
+
+function insertNodeLink(nodeId){
+  const tree = openNoteTree();
+  const node = tree && findNode(tree.root, nodeId);
+  closeNodePicker();
+  if(!node) return;
+  // Only the id is stored; the label is re-resolved from the node on every open.
+  insertLinkHtml(`<a class="node-link" data-nodelink="${esc(node.id)}" contenteditable="false">${esc(node.text)}</a>&nbsp;`);
 }
 
 // Appends rather than replaces: the reminder must never overwrite what's already written.
@@ -3408,8 +3679,11 @@ function appendNodeLinkToNotebook(treeId,nodeId){
   const tree = findTree(treeId);
   const node = tree && findNode(tree.root, nodeId);
   if(!tree || !node) return;
+  let note = noteForTree(treeId);
+  if(!note) note = createNote({treeId, title:treeName(tree)});
   const link = `<div><a class="node-link" data-nodelink="${esc(node.id)}" contenteditable="false">${esc(node.text)}</a>&nbsp;</div>`;
-  tree.notebook = sanitizeNotebook((tree.notebook || '') + link);
+  note.body = sanitizeNotebook((note.body || '') + link);
+  note.updatedAt = todayISO();
   save();
 }
 
