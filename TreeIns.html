@@ -1497,11 +1497,14 @@ function renderToday(){
 }
 
 /* ============ VIEW NAV ============ */
+// Every value data-go may carry. Add a view here at the same time as its tab, or the tab
+// will render and do nothing.
 function openTree(id){ flushNotebook(); CURRENT_TREE=id; VIEW='tree'; OPEN_FORM=null; PENDING_DELETE=null; NODE_POPOVER=null; REMINDER=null; NODE_PICKER=null; TREE_ZOOM={scale:1,x:0,y:0}; TREE_ZOOM_READY=false; render(); }
 function goHome(){ flushNotebook(); VIEW='home'; CURRENT_TREE=null; NODE_POPOVER=null; REMINDER=null; NODE_PICKER=null; render(); }
 function goToday(){ flushNotebook(); VIEW='today'; REMINDER=null; NODE_PICKER=null; render(); }
 function goStats(){ flushNotebook(); VIEW='stats'; REMINDER=null; NODE_PICKER=null; render(); }
 function goSettings(){ flushNotebook(); VIEW='settings'; REMINDER=null; NODE_PICKER=null; render(); }
+const GO_VIEW = { home:goHome, today:goToday, stats:goStats, settings:goSettings };
 // Its own screen rather than a modal: the prompt runs to ~90 lines, which a centred
 // dialog can't show on a phone without turning into a scroll-inside-a-scroll.
 function goAiPrompt(){ flushNotebook(); VIEW='aiprompt'; REMINDER=null; NODE_PICKER=null; render(); }
@@ -2866,8 +2869,11 @@ function actionRestoreBackup(){
 function bindEvents(){
   const app = document.getElementById('app');
 
+  // A table rather than an if/else chain: the chain had no branch for a value it did not
+  // know, so adding a tab silently produced a button that did nothing when tapped.
   app.querySelectorAll('[data-go]').forEach(el=>el.addEventListener('click',()=>{
-    const v = el.dataset.go; if(v==='home') goHome(); else if(v==='stats') goStats(); else if(v==='settings') goSettings();
+    const go = GO_VIEW[el.dataset.go];
+    if(go) go(); else console.warn('data-go with no destination:', el.dataset.go);
   }));
   app.querySelectorAll('[data-open]').forEach(el=>el.addEventListener('click',(e)=>{
     if(e.target.closest('[data-del-tree]')) return; openTree(el.dataset.open);
