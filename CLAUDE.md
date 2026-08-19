@@ -75,6 +75,13 @@ DOM, no component framework, no diffing.
   `renderHome()` reads the daily tree without checking it exists, and the layout pass
   assumes ids and `children` arrays, so a damaged backup would otherwise crash the app on
   the next paint with no way back in.
+- **Progress views** read only from the completion dates (`completedAt`, `completedDays[]`)
+  via `completionIndex()`; ticks made before those were recorded carry no date and are
+  deliberately absent rather than guessed onto a day. When `streak.totalCompleted` runs
+  ahead of what the index holds, the growth screen says so instead of letting the chart
+  look wrong. The Today rings are Habits (done/total today), Tasks (goal-tree tasks today
+  against `settings.dailyGoal`) and Week (active days of the last 7 against `WEEK_GOAL`,
+  which is 5 on purpose — a target you lose by taking one day off stops motivating).
 - **Actions** (`action*` functions) mutate `DATA` directly, call `save()`, then
   `render()`. There's no event/reducer layer — read an action function top-to-bottom to
   see its full effect.
@@ -111,8 +118,8 @@ DOM, no component framework, no diffing.
   drag-to-pan and pinch-to-zoom on the `#tree-viewport` background (ignoring clicks that
   start on a button/input/`.node-draggable` so it doesn't fight node dragging), plus
   Ctrl+wheel zoom on desktop.
-- **Views**: `VIEW` is one of `'home' | 'tree' | 'stats' | 'settings'`, dispatched in
-  `render()`. `MODAL` drives the new-tree wizard (`WIZ_STEP`/`WIZ_DRAFT`) and other
+- **Views**: `VIEW` is one of `'home' | 'today' | 'tree' | 'notebook' | 'stats' |
+  `'settings' | 'aiprompt'`, dispatched in `render()`. `MODAL` drives the new-tree wizard (`WIZ_STEP`/`WIZ_DRAFT`) and other
   overlays independently of `VIEW`.
 - **Languages**: every user-facing string lives in `STRINGS.ru` / `STRINGS.en` and is read
   with `tr('key', {vars})`; `{placeholders}` are substituted from the second argument, and

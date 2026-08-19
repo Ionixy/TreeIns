@@ -41,6 +41,7 @@
     --tint-soft:rgba(52,199,89,.14);
     --orange:#FF9500;
     --orange-soft:rgba(255,149,0,.15);
+    --blue:#0A84FF;
     --red:#FF3B30;
     --bar-bg:rgba(242,242,247,.78);    /* translucent nav + tab bars */
     --sheet-bg:#FFFFFF;
@@ -78,6 +79,7 @@
     --tint-soft:rgba(48,209,88,.18);
     --orange:#FF9F0A;
     --orange-soft:rgba(255,159,10,.20);
+    --blue:#0A84FF;
     --red:#FF453A;
     --bar-bg:rgba(20,20,22,.80);
     --sheet-bg:#1C1C1E;
@@ -297,6 +299,42 @@
   .add-panel input:focus{outline:none; box-shadow:0 0 0 3px var(--tint-soft);}
   .add-panel button{flex:none; width:32px; height:32px; border:none; border-radius:9px; background:var(--tint);
     color:#fff; font-size:16px; line-height:1; cursor:pointer;}
+
+  /* ---------- today ---------- */
+  .rings-card{background:var(--bg-elev); border:none; border-radius:var(--r-card);
+    box-shadow:var(--shadow); padding:18px 20px; display:flex; align-items:center; gap:20px;}
+  .rings-card .rings{width:132px; height:132px; flex:none;}
+  .ring-legend{display:flex; flex-direction:column; gap:12px; flex:1; min-width:0;}
+  .ring-legend .row{display:flex; flex-direction:column; gap:2px; min-width:0;}
+  .ring-legend .k{font-size:13px; color:var(--label-2); display:flex; align-items:center; gap:6px;}
+  .ring-legend .k .dot{width:9px; height:9px; border-radius:50%; flex:none;}
+  .ring-legend .dot.habits{background:var(--tint);}
+  .ring-legend .dot.tasks{background:var(--orange);}
+  .ring-legend .dot.week{background:var(--blue);}
+  .ring-legend .v{font-family:var(--font-round); font-weight:600; font-size:19px;
+    letter-spacing:-.02em; color:var(--label); font-variant-numeric:tabular-nums;}
+  .habit-row .habit-tick{width:30px; height:30px; flex:none; border-radius:50%; cursor:pointer;
+    border:1.5px solid var(--label-3); background:none; color:transparent; font-size:15px;
+    line-height:1; display:flex; align-items:center; justify-content:center;
+    transition:background-color .15s ease, border-color .15s ease, color .15s ease;}
+  .habit-row .habit-tick.on{background:var(--tint); border-color:var(--tint); color:#fff;}
+  .stepper{display:flex; align-items:center; gap:2px; background:var(--fill);
+    border-radius:9px; padding:2px;}
+  .stepper button{width:32px; height:28px; border:none; background:none; cursor:pointer;
+    color:var(--tint-text); font-size:19px; line-height:1; font-family:var(--font);}
+  .stepper b{min-width:26px; text-align:center; font-family:var(--font-round);
+    font-variant-numeric:tabular-nums; font-size:16px;}
+
+  /* Bars scale to the tallest column, so the shape of the period is what reads, not an
+     absolute height. A zero day keeps a visible stub rather than vanishing. */
+  .chart{display:flex; align-items:flex-end; gap:3px; height:112px; padding:10px 12px 0;}
+  .chart .col{flex:1; min-width:0; display:flex; flex-direction:column; align-items:center;
+    justify-content:flex-end; height:100%; gap:4px;}
+  .chart .col i{display:block; width:100%; max-width:22px; background:var(--tint);
+    border-radius:3px; min-height:3px;}
+  .chart .col span{font-size:9.5px; color:var(--label-2); white-space:nowrap;
+    overflow:hidden; height:12px;}
+  .chart-summary{font-size:13px; color:var(--label-2);}
 
   /* ---------- stats ---------- */
   .stats-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
@@ -660,6 +698,19 @@ ru: {
   'err.backupNewer':'Копия сделана в более новой версии приложения — обновите GoalTree.',
   'err.backupBroken':'Файл повреждён: в нём нет данных GoalTree.',
 
+  'nav.today':'Сегодня',
+  'today.rings':'Сегодня', 'today.habits':'Привычки', 'today.tasks':'Задачи',
+  'today.week':'Неделя', 'today.weekDays':'{n} из {total} дней',
+  'today.habitsTitle':'Привычки на сегодня', 'today.noHabits':'Ежедневных заданий пока нет',
+  'today.addHabits':'Добавить в «Ежедневные задания»',
+  'today.allDone':'Все привычки на сегодня закрыты',
+  'today.goalHint':'Цель на день: {n}',
+  'settings.dailyGoal':'Цель по задачам в день',
+  'stats.period':'Прогресс', 'stats.week':'Неделя', 'stats.month':'Месяц', 'stats.year':'Год',
+  'stats.inPeriod':'{n} {tasks} за период', 'stats.activeIn':'активных дней: {n}',
+  'stats.historyNote':'История ведётся с того дня, как приложение начало записывать даты выполнения. Отметки, сделанные раньше, в графике не видны.',
+  'stats.noHistory':'Пока нечего показать — отмечайте задачи, и здесь появится история.',
+
   'plural.tasks':['задача','задачи','задач'], 'plural.nodes':['узел','узла','узлов'],
   'plural.trees':['дерево','дерева','деревьев']
 },
@@ -804,6 +855,19 @@ en: {
   'err.backupNewer':'This backup was made by a newer version of the app — update GoalTree.',
   'err.backupBroken':'The file is damaged: there is no GoalTree data in it.',
 
+  'nav.today':'Today',
+  'today.rings':'Today', 'today.habits':'Habits', 'today.tasks':'Tasks',
+  'today.week':'Week', 'today.weekDays':'{n} of {total} days',
+  'today.habitsTitle':'Habits for today', 'today.noHabits':'No daily tasks yet',
+  'today.addHabits':'Add some to “Daily tasks”',
+  'today.allDone':'Every habit for today is done',
+  'today.goalHint':'Daily goal: {n}',
+  'settings.dailyGoal':'Daily task goal',
+  'stats.period':'Progress', 'stats.week':'Week', 'stats.month':'Month', 'stats.year':'Year',
+  'stats.inPeriod':'{n} {tasks} in this period', 'stats.activeIn':'active days: {n}',
+  'stats.historyNote':'History starts from the day the app began recording completion dates. Anything ticked before that does not appear on the chart.',
+  'stats.noHistory':'Nothing to show yet — tick some tasks and the history will appear here.',
+
   'plural.tasks':['task','tasks'], 'plural.nodes':['node','nodes'],
   'plural.trees':['tree','trees']
 }
@@ -890,7 +954,8 @@ function ringProgress(pct,cls){
 const NAV_ICONS = {
   forest:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.2 6.4 11h3.1l-4 5.6h13l-4-5.6h3.1z"/><path d="M12 16.6V21"/></svg>`,
   chart:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-7"/><path d="M22 20H2"/></svg>`,
-  gear:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h9"/><path d="M17 7h3"/><path d="M4 17h5"/><path d="M13 17h7"/><circle cx="15" cy="7" r="2.3"/><circle cx="11" cy="17" r="2.3"/></svg>`
+  gear:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h9"/><path d="M17 7h3"/><path d="M4 17h5"/><path d="M13 17h7"/><circle cx="15" cy="7" r="2.3"/><circle cx="11" cy="17" r="2.3"/></svg>`,
+  today:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="8.4"/><circle cx="12" cy="12" r="4.6"/></svg>`
 };
 // Same idiom, one size down, for the per-node action row and the tree-header pills.
 const ACT_ICONS = {
@@ -916,6 +981,7 @@ let EXPORT_OPTS = {marks:false, notes:false}; // both off by default: ticks and 
 let EXPORT_LINK = null;      // built lazily; null until the user asks for a link
 let IMPORT_DRAFT = null;     // {payload, nodeCount, hasNotes, hasMarks, name} awaiting confirmation
 let RESTORE_DRAFT = null;    // {data, treeCount, nodeCount, savedAt} awaiting confirmation
+let STATS_PERIOD = 'week';   // 'week' | 'month' | 'year' on the growth screen
 let CONGRATS_TREE = null;    // tree id currently showing congrats overlay
 let REMINDER = null;         // {treeId, nodeId} task that just got ticked, showing the "write it down" nudge
 let NODE_POPOVER = null;     // {treeId, nodeId} node currently open in the edit popover
@@ -957,7 +1023,17 @@ function daysBetween(a,b){
   return Number.isFinite(diff) ? Math.round(diff) : 0;
 }
 
-function defaultSettings(){ return { theme:'auto', lang:'auto', sound:false, notifications:false, taskReminder:true }; }
+// How many goal-tree tasks a day fills the Tasks ring. A ring without an honest target is
+// just decoration, and one target cannot fit everyone — hence a setting, not a constant.
+const DAILY_GOAL_MIN = 1, DAILY_GOAL_MAX = 20, DAILY_GOAL_DEFAULT = 3;
+// Days of the last seven that fill the Week ring. Deliberately below 7: a streak you lose
+// for taking one day off stops being motivating.
+const WEEK_GOAL = 5;
+function dailyGoal(){
+  const v = DATA.settings && +DATA.settings.dailyGoal;
+  return (v >= DAILY_GOAL_MIN && v <= DAILY_GOAL_MAX) ? Math.round(v) : DAILY_GOAL_DEFAULT;
+}
+function defaultSettings(){ return { theme:'auto', lang:'auto', dailyGoal:DAILY_GOAL_DEFAULT, sound:false, notifications:false, taskReminder:true }; }
 
 // Settings added after launch default to ON, so saves written before they existed (where
 // the key is simply absent) must read as enabled rather than disabled. Everything else
@@ -1243,6 +1319,58 @@ function stageEmoji(tree, pct){
   return type; // big, ripe, grown all show the chosen species
 }
 
+/* ============ HISTORY ============
+   Everything the progress views show is derived from the dates written on completion:
+   `completedAt` on a goal task, `completedDays[]` on a daily habit. Ticks made before the
+   app recorded dates carry none, and are deliberately invisible here rather than being
+   guessed onto a day they may not belong to — see the note the growth screen shows when
+   the totals disagree. */
+function eachNode(node, fn){
+  fn(node);
+  for(const c of node.children || []) eachNode(c, fn);
+}
+// iso -> how many tasks were completed that day, across every tree.
+function completionIndex(){
+  const map = new Map();
+  const bump = (iso)=>{ if(iso) map.set(iso, (map.get(iso)||0) + 1); };
+  for(const t of DATA.trees){
+    eachNode(t.root, n=>{
+      if(n === t.root) return;                  // the root is the goal itself, never a task
+      if(t.isDaily) (n.completedDays || []).forEach(bump);
+      else if(n.completed) bump(n.completedAt);  // undated old ticks stay out
+    });
+  }
+  return map;
+}
+function habitsToday(){
+  const d = DATA.trees.find(t=>t.isDaily);
+  const kids = d ? d.root.children : [];
+  return { done: kids.filter(n=>isDoneToday(n)).length, total: kids.length, list: kids };
+}
+// Goal-tree tasks only: habits have a ring of their own and would double-count here.
+function goalTasksOn(iso){
+  let n = 0;
+  for(const t of DATA.trees){
+    if(t.isDaily) continue;
+    eachNode(t.root, x=>{ if(x !== t.root && x.completed && x.completedAt === iso) n++; });
+  }
+  return n;
+}
+function shiftDays(iso, delta){
+  const [y,m,d] = iso.split('-').map(Number);
+  const dt = new Date(y, m-1, d + delta), p = n => String(n).padStart(2,'0');
+  return `${dt.getFullYear()}-${p(dt.getMonth()+1)}-${p(dt.getDate())}`;
+}
+function lastNDays(n){
+  const out = [], today = todayISO();
+  for(let i = n-1; i >= 0; i--) out.push(shiftDays(today, -i));
+  return out;
+}
+function activeDaysInLast(n){
+  const days = new Set(lastNDays(n));
+  return (DATA.streak.activeDates || []).filter(d => days.has(d)).length;
+}
+
 /* ============ ACTIONS ============ */
 function actionAddTree(draft){
   const id = uid();
@@ -1311,9 +1439,67 @@ function actionResetAll(){
   DATA = defaultData(); MODAL=null; save(); goHome();
 }
 
+/* Three concentric rings, closed clockwise from the top like Apple's activity rings.
+   Each is a full circle underneath at low opacity so an empty ring still reads as a ring
+   rather than as missing UI. */
+function activityRings(vals){
+  const R = [56, 42, 28], W = 13;
+  const arc = (r, pct, color, i) => {
+    const c = 2 * Math.PI * r;
+    const on = Math.max(0, Math.min(1, pct)) * c;
+    return `<circle cx="70" cy="70" r="${r}" fill="none" stroke="${color}" stroke-width="${W}" opacity=".18"/>
+      <circle cx="70" cy="70" r="${r}" fill="none" stroke="${color}" stroke-width="${W}" stroke-linecap="round"
+        stroke-dasharray="${on.toFixed(2)} ${(c - on).toFixed(2)}" transform="rotate(-90 70 70)"/>`;
+  };
+  return `<svg class="rings" viewBox="0 0 140 140" aria-hidden="true">
+    ${arc(R[0], vals.habits, 'var(--tint)', 0)}
+    ${arc(R[1], vals.tasks, 'var(--orange)', 1)}
+    ${arc(R[2], vals.week, 'var(--blue)', 2)}
+  </svg>`;
+}
+
+function renderToday(){
+  const h = habitsToday();
+  const goal = dailyGoal();
+  const doneTasks = goalTasksOn(todayISO());
+  const weekDays = activeDaysInLast(7);
+  const rings = { habits: h.total ? h.done / h.total : 0,
+                  tasks: doneTasks / goal,
+                  week: weekDays / WEEK_GOAL };
+
+  const legend = (cls, key, value) =>
+    `<div class="row"><span class="k"><i class="dot ${cls}"></i>${tr(key)}</span><span class="v">${value}</span></div>`;
+
+  const habitList = h.total
+    ? `<div class="settings-group">${h.list.map(n=>{
+        const done = isDoneToday(n);
+        return `<div class="setting-row habit-row">
+          <span>${esc(n.text)}</span>
+          <button type="button" class="habit-tick${done?' on':''}" data-toggle="daily|${n.id}"
+            title="${done?tr('tree.uncheck'):tr('tree.check')}" aria-label="${done?tr('tree.uncheck'):tr('tree.check')}">✓</button>
+        </div>`;}).join('')}</div>
+       ${h.done === h.total ? `<p class="settings-note">${tr('today.allDone')}</p>` : ''}`
+    : `<div class="settings-group"><div class="setting-row"><span>${tr('today.noHabits')}</span></div></div>
+       <p class="settings-note"><button type="button" class="btn ghost" data-open-daily="1">${tr('today.addHabits')}</button></p>`;
+
+  return `
+  <div class="section-title">${tr('today.rings')}</div>
+  <div class="rings-card">
+    ${activityRings(rings)}
+    <div class="ring-legend">
+      ${legend('habits','today.habits', h.total ? `${h.done}/${h.total}` : '—')}
+      ${legend('tasks','today.tasks', `${doneTasks}/${goal}`)}
+      ${legend('week','today.week', tr('today.weekDays',{n:weekDays,total:WEEK_GOAL}))}
+    </div>
+  </div>
+  <div class="section-title">${tr('today.habitsTitle')}</div>
+  ${habitList}`;
+}
+
 /* ============ VIEW NAV ============ */
 function openTree(id){ flushNotebook(); CURRENT_TREE=id; VIEW='tree'; OPEN_FORM=null; PENDING_DELETE=null; NODE_POPOVER=null; REMINDER=null; NODE_PICKER=null; TREE_ZOOM={scale:1,x:0,y:0}; TREE_ZOOM_READY=false; render(); }
 function goHome(){ flushNotebook(); VIEW='home'; CURRENT_TREE=null; NODE_POPOVER=null; REMINDER=null; NODE_PICKER=null; render(); }
+function goToday(){ flushNotebook(); VIEW='today'; REMINDER=null; NODE_PICKER=null; render(); }
 function goStats(){ flushNotebook(); VIEW='stats'; REMINDER=null; NODE_PICKER=null; render(); }
 function goSettings(){ flushNotebook(); VIEW='settings'; REMINDER=null; NODE_PICKER=null; render(); }
 // Its own screen rather than a modal: the prompt runs to ~90 lines, which a centred
@@ -1331,7 +1517,7 @@ function render(){
   const app = document.getElementById('app');
   app.innerHTML = renderTopbar() +
     `<div class="content">` +
-    (VIEW==='home' ? renderHome() : VIEW==='tree' ? renderTreeView()
+    (VIEW==='home' ? renderHome() : VIEW==='today' ? renderToday() : VIEW==='tree' ? renderTreeView()
       : VIEW==='notebook' ? renderNotebookView()
       : VIEW==='settings' ? renderSettingsView()
       : VIEW==='aiprompt' ? renderAiPromptView() : renderStats()) +
@@ -1358,6 +1544,7 @@ function renderTopbar(){
 function renderBottomNav(){
   return `<nav class="tabs"><div class="inner">
     <button data-go="home" class="${VIEW==='home'||VIEW==='tree'||VIEW==='notebook'?'active':''}"><span class="ic">${NAV_ICONS.forest}</span><span class="t">${tr('nav.forest')}</span></button>
+    <button data-go="today" class="${VIEW==='today'?'active':''}"><span class="ic">${NAV_ICONS.today}</span><span class="t">${tr('nav.today')}</span></button>
     <button data-go="stats" class="${VIEW==='stats'?'active':''}"><span class="ic">${NAV_ICONS.chart}</span><span class="t">${tr('nav.growth')}</span></button>
     <button data-go="settings" class="${VIEW==='settings'||VIEW==='aiprompt'?'active':''}"><span class="ic">${NAV_ICONS.gear}</span><span class="t">${tr('nav.settings')}</span></button>
   </div></nav>`;
@@ -1595,6 +1782,72 @@ function renderTreeCanvas(tree){
   return {html:svg+items, width, height};
 }
 
+/* Bars are scaled to the tallest column in the window, not to an absolute target: the
+   question this chart answers is "how does this day compare with my other days". */
+function renderHistoryChart(){
+  const idx = completionIndex();
+  // The window the summary counts over, independent of how the bars are grouped.
+  const firstDay = (()=>{
+    if(STATS_PERIOD !== 'year') return lastNDays(STATS_PERIOD === 'week' ? 7 : 30)[0];
+    // The 1st of the month 11 back — via Date so month lengths take care of themselves.
+    const [y,m] = todayISO().split('-').map(Number);
+    const d0 = new Date(y, m-1-11, 1);
+    return `${d0.getFullYear()}-${String(d0.getMonth()+1).padStart(2,'0')}-01`;
+  })();
+  const inPeriod = iso => iso >= firstDay && iso <= todayISO();
+  let cols;
+  if(STATS_PERIOD === 'year'){
+    const now = todayISO().slice(0,7);
+    const months = [];
+    for(let i = 11; i >= 0; i--){
+      const [y,m] = now.split('-').map(Number);
+      const d = new Date(y, m-1-i, 1), p = n => String(n).padStart(2,'0');
+      months.push({key:`${d.getFullYear()}-${p(d.getMonth()+1)}`,
+                   label:d.toLocaleDateString(localeTag(),{month:'short'})});
+    }
+    cols = months.map(mo => ({
+      label: mo.label,
+      value: [...idx.entries()].reduce((n,[iso,c]) => n + (iso.slice(0,7) === mo.key ? c : 0), 0)
+    }));
+  }else{
+    const days = lastNDays(STATS_PERIOD === 'week' ? 7 : 30);
+    cols = days.map((iso,i) => ({
+      // A month of dates would collide at phone width, so only every fifth is labelled.
+      label: STATS_PERIOD === 'week'
+        ? new Date(...iso.split('-').map((v,j)=> j===1 ? +v-1 : +v)).toLocaleDateString(localeTag(),{weekday:'short'})
+        : (i % 5 === 0 ? iso.slice(8) : ''),
+      value: idx.get(iso) || 0
+    }));
+  }
+  const total = cols.reduce((n,c)=>n+c.value,0);
+  const max = Math.max(1, ...cols.map(c=>c.value));
+  // Counted from the dates themselves, not from the columns: a year is drawn as twelve
+  // monthly bars, so counting filled columns there would report months as if they were days.
+  const activeDays = [...idx.entries()].filter(([iso,c]) => c > 0 && inPeriod(iso)).length;
+  const bars = cols.map(c=>`<div class="col"><i style="height:${Math.round(c.value/max*100)}%"
+      title="${c.value}"></i><span>${c.label}</span></div>`).join('');
+
+  // Ticks made before the app recorded dates are missing from the index on purpose; if the
+  // lifetime counter is ahead of it, say so rather than letting the chart look wrong.
+  const indexed = [...idx.values()].reduce((a,b)=>a+b,0);
+  const note = indexed === 0 ? tr('stats.noHistory')
+             : (DATA.streak.totalCompleted > indexed ? tr('stats.historyNote') : '');
+
+  return `
+  <div class="section-title">${tr('stats.period')}</div>
+  <div class="settings-group">
+    <div class="theme-row">
+      ${['week','month','year'].map(p=>`<div class="theme-chip ${STATS_PERIOD===p?'active':''}" data-period="${p}"><span class="n">${tr('stats.'+p)}</span></div>`).join('')}
+    </div>
+    <div class="chart">${bars}</div>
+    <div class="setting-row chart-summary">
+      <span>${tr('stats.inPeriod',{n:total, tasks:pluralize(total,'plural.tasks')})}</span>
+      <span>${tr('stats.activeIn',{n:activeDays})}</span>
+    </div>
+  </div>
+  ${note ? `<p class="settings-note">${note}</p>` : ''}`;
+}
+
 function renderStats(){
   const s = DATA.streak;
   const totalDays = daysBetween(s.firstUseDate, todayISO()) + 1;
@@ -1614,6 +1867,7 @@ function renderStats(){
         <div style="font-size:13px;color:var(--label-2);margin-top:2px;">${tr('stats.activeOf',{n:s.activeDates.length,total:totalDays})}</div></div>
     </div>
   </div>
+  ${renderHistoryChart()}
   <div class="season-badge"><span class="e">${season.e}</span><span class="n">${tr('stats.season')}<b>${tr('season.'+season.k)}</b></span></div>
   <div class="philosophy">${tr('stats.philosophy')}</div>`;
 }
@@ -1643,6 +1897,12 @@ function renderSettingsView(){
     </div>
   </div>
   <div class="settings-group">
+    <div class="setting-row"><span>${tr('settings.dailyGoal')}</span>
+      <span class="stepper">
+        <button type="button" data-goal-step="-1" aria-label="-">−</button>
+        <b>${dailyGoal()}</b>
+        <button type="button" data-goal-step="1" aria-label="+">+</button>
+      </span></div>
     ${switchRow('taskReminder',tr('settings.taskReminder'), settingEnabled('taskReminder'))}
     ${switchRow('sound',tr('settings.sound'), !!st.sound)}
     ${switchRow('notifications',tr('settings.notifications'), !!st.notifications)}
@@ -2625,6 +2885,16 @@ function bindEvents(){
   app.querySelectorAll('[data-set-theme]').forEach(el=>el.addEventListener('click',()=>{
     DATA.settings.theme = el.dataset.setTheme; save(); applyTheme(); render();
   }));
+  app.querySelectorAll('[data-period]').forEach(el=>el.addEventListener('click',()=>{
+    STATS_PERIOD = el.dataset.period; render();
+  }));
+  app.querySelectorAll('[data-goal-step]').forEach(el=>el.addEventListener('click',()=>{
+    const next = dailyGoal() + (+el.dataset.goalStep);
+    DATA.settings.dailyGoal = Math.max(DAILY_GOAL_MIN, Math.min(DAILY_GOAL_MAX, next));
+    save(); render();
+  }));
+  const openDaily = app.querySelector('[data-open-daily]');
+  if(openDaily) openDaily.addEventListener('click', ()=>openTree('daily'));
   app.querySelectorAll('[data-set-lang]').forEach(el=>el.addEventListener('click',()=>{
     DATA.settings.lang = el.dataset.setLang; save(); applyLang(); render();
   }));
