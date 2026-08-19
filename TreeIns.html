@@ -448,9 +448,16 @@
     margin:6px 0 0;}
   .note-title:focus{outline:none;}
   .note-title::placeholder{color:var(--label-3);}
+  /* A main note carries full weight; a nested one steps down in size and colour, so the
+     list reads as a hierarchy at a glance rather than only through its indentation. */
   .note-row{cursor:pointer; gap:10px;}
   .note-row .note-row-body{display:flex; flex-direction:column; min-width:0; gap:1px; flex:1;}
   .note-row .note-row-body b{font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .note-row.nested .note-row-body b{font-size:15px; font-weight:500; color:var(--label-2);}
+  .note-row.nested + .note-row:not(.nested)::before{left:0;}
+  .note-guide{width:10px; align-self:stretch; margin:-9px 0 -9px -14px; flex:none;
+    border-left:1.5px solid var(--separator); border-bottom:1.5px solid var(--separator);
+    border-bottom-left-radius:6px; max-height:22px; margin-top:-2px;}
   .note-row .note-row-body small{font-size:13px; color:var(--label-2);
     overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .note-row .chev-right{color:var(--label-3); font-size:20px; line-height:1; flex:none;}
@@ -722,7 +729,8 @@ ru: {
   'notes.createNamed':'Создать заметку «{name}»',
   'notes.deleted':'Заметка удалена', 'notes.confirmDelete':'Удалить заметку «{name}»?',
   'notes.noteGone':'Заметка удалена — переходить некуда.',
-  'notes.backToNotes':'Заметки',
+  'notes.backToNotes':'Заметки', 'notes.contains':'{n} внутри',
+  'notes.mainOnes':'Основные', 'notes.alsoIn':'есть и в других заметках',
   'today.rings':'Сегодня', 'today.habits':'Привычки', 'today.tasks':'Задачи',
   'today.week':'Неделя', 'today.weekDays':'{n} из {total} дней',
   'today.habitsTitle':'Привычки на сегодня', 'today.noHabits':'Ежедневных заданий пока нет',
@@ -888,7 +896,8 @@ en: {
   'notes.createNamed':'Create a note “{name}”',
   'notes.deleted':'Note deleted', 'notes.confirmDelete':'Delete the note “{name}”?',
   'notes.noteGone':'That note was deleted — nowhere to jump to.',
-  'notes.backToNotes':'Notes',
+  'notes.backToNotes':'Notes', 'notes.contains':'{n} inside',
+  'notes.mainOnes':'Main notes', 'notes.alsoIn':'also linked elsewhere',
   'today.rings':'Today', 'today.habits':'Habits', 'today.tasks':'Tasks',
   'today.week':'Week', 'today.weekDays':'{n} of {total} days',
   'today.habitsTitle':'Habits for today', 'today.noHabits':'No daily tasks yet',
@@ -2569,6 +2578,42 @@ function noteSnippet(note){
   const tpl = document.createElement('template'); tpl.innerHTML = (note && note.body) || '';
   return (tpl.content.textContent || '').replace(/\s+/g,' ').trim().slice(0, 90);
 }
+// Outgoing links, in the order they appear in the text: that order is the author's own,
+// so the list mirrors how the note was written rather than re-sorting it.
+function noteLinkIds(note){
+  const ids = [];
+  const re = /data-notelink="([^"]+)"/g;
+  let m;
+  while((m = re.exec((note && note.body) || ''))){ if(!ids.includes(m[1])) ids.push(m[1]); }
+  return ids;
+}
+/* The list's shape comes from the links, because that is the only structure there is.
+   A note nobody links to is a main note; a note linked from another sits inside it.
+
+   Two things this must survive: a note linked from several places, and notes that link to
+   each other in a circle. Both are handled by placing every note exactly once — the first
+   parent that reaches it wins, and `alsoLinked` marks the ones that live in more than one
+   place so the single position is not read as the whole truth. Anything left unreached
+   (a pure cycle) is then shown at the top level, so no note can hide from the list. */
+function noteForest(){
+  const notes = allNotes();
+  const byRecent = (a,b) => String(b.updatedAt||'').localeCompare(String(a.updatedAt||''))
+                         || noteTitle(a).localeCompare(noteTitle(b));
+  const parents = new Map();                    // id -> how many notes link to it
+  notes.forEach(n => noteLinkIds(n).forEach(id => parents.set(id, (parents.get(id)||0) + 1)));
+
+  const placed = new Set(), out = [];
+  const walk = (note, depth) => {
+    if(placed.has(note.id)) return;
+    placed.add(note.id);
+    const kids = noteLinkIds(note).map(findNote).filter(Boolean);
+    out.push({ note, depth, children: kids.length, alsoLinked: (parents.get(note.id)||0) > 1 });
+    kids.forEach(k => walk(k, depth + 1));
+  };
+  notes.filter(n => !parents.has(n.id)).sort(byRecent).forEach(n => walk(n, 0));
+  notes.filter(n => !placed.has(n.id)).sort(byRecent).forEach(n => walk(n, 0));
+  return out;
+}
 // Which notes point at this one. The links are the structure here — there is no separate
 // parent field to disagree with them.
 function backlinksTo(noteId){
@@ -2577,23 +2622,35 @@ function backlinksTo(noteId){
 }
 
 function renderNotesView(){
-  const notes = allNotes().slice().sort((a,b)=>
-    String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')) || noteTitle(a).localeCompare(noteTitle(b)));
-  const rows = notes.map(n=>{
-    const tree = n.treeId && findTree(n.treeId);
-    const snip = noteSnippet(n);
-    return `<div class="setting-row note-row" data-open-note="${n.id}">
+  const forest = noteForest();
+  // Indentation stops growing after a few levels: past that it eats the title on a phone
+  // and the guide lines carry the nesting anyway.
+  const INDENT = 18, MAX_INDENT = 4;
+  const rows = forest.map(({note, depth, children, alsoLinked})=>{
+    const tree = note.treeId && findTree(note.treeId);
+    // Built as parts and joined, so a note with nothing to say in its second line does not
+    // start with a dangling separator.
+    const parts = [];
+    if(tree) parts.push(tr('notes.ofTree',{name:esc(treeName(tree))}));
+    else if(children) parts.push(tr('notes.contains',{n:children}));
+    else { const snip = noteSnippet(note); if(snip) parts.push(esc(snip)); }
+    if(alsoLinked) parts.push(tr('notes.alsoIn'));
+    const sub = parts.join(' · ');
+    const pad = 16 + Math.min(depth, MAX_INDENT) * INDENT;
+    return `<div class="setting-row note-row${depth ? ' nested' : ''}" data-open-note="${note.id}"
+        style="padding-left:${pad}px">
+      ${depth ? '<span class="note-guide"></span>' : ''}
       <span class="note-row-body">
-        <b>${esc(noteTitle(n))}</b>
-        <small>${tree ? esc(tr('notes.ofTree',{name:treeName(tree)})) : esc(snip)}</small>
+        <b>${esc(noteTitle(note))}</b>
+        <small>${sub}</small>
       </span>
       <span class="chev-right">›</span>
     </div>`;
   }).join('');
   return `
   <div class="section-title">${tr('notes.title')}</div>
-  ${notes.length ? `<div class="settings-group">${rows}</div>`
-                 : `<p class="empty">${tr('notes.empty')}</p>`}
+  ${forest.length ? `<div class="settings-group">${rows}</div>`
+                  : `<p class="empty">${tr('notes.empty')}</p>`}
   <div class="settings-actions">
     <button class="btn soft block" data-new-note="1">＋ ${tr('notes.new')}</button>
   </div>`;

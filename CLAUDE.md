@@ -73,7 +73,11 @@ DOM, no component framework, no diffing.
   makes that note on first use rather than seeding a blank one per tree. A note with no
   `treeId` stands alone, which is the point of the section. Structure comes from links, not
   from a parent field: `data-notelink` between notes, `data-nodelink` to a task (only
-  offered when the note belongs to a tree). Both labels are resolved at *display* time from
+  offered when the note belongs to a tree). `noteForest()` turns those links into the list's
+  shape — a note nobody links to is a main note, a linked one sits inside its linker — and
+  places every note exactly once, so a note linked from two places and a pair that link to
+  each other in a circle can neither duplicate, hang, nor disappear. Both labels are
+  resolved at *display* time from
   the target's current title, so renaming propagates and a deleted target leaves a broken
   link that keeps its wording. `sanitizeNotebook()` strips every attribute and restores
   exactly these two — a link kind it does not know about is silently unwrapped into text.
