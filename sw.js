@@ -1,12 +1,13 @@
 // Bump this whenever ASSETS changes, otherwise everyone who already installed the app
 // keeps the previous cache and never sees the new files.
-const CACHE_NAME = 'goaltree-v6';
+const CACHE_NAME = 'goaltree-v7';
 const ASSETS = [
   './',              // the Pages root, which index.html answers
   './index.html',
   './TreeIns.html',
   './install.html',
   './ai-prompt.md',  // source of the AI prompt; also shareable as a plain link
+  './ai-prompt.en.md', // the same, for the English UI
   './manifest.json',
   './icon-192.png',
   './icon-512.png',

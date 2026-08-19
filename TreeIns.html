@@ -509,19 +509,335 @@
 
 <script>
 /* ============ CONSTANTS ============ */
+/* ============ LANGUAGE ============
+   Every user-facing string lives here and is fetched with tr('key'). Two rules keep this
+   honest: nothing outside this table may contain prose, and `ru` and `en` must hold the
+   same keys — a missing one falls back to Russian rather than showing a raw key, but that
+   fallback is a bug, not a feature.
+
+   {placeholders} are substituted from the second argument. Strings that vary with a count
+   are arrays of plural forms: Russian needs three (1 / 2-4 / 5+), English two, and
+   pluralize() picks by the active language. */
+const STRINGS = {
+ru: {
+  'common.cancel':'Отмена', 'common.save':'Сохранить', 'common.back':'Назад',
+  'common.next':'Далее', 'common.add':'Добавить', 'common.edit':'Редактировать',
+  'common.delete':'Удалить', 'common.ok':'Хорошо', 'common.name':'Название',
+  'common.optional':'необязательно',
+
+  'nav.forest':'Лес', 'nav.growth':'Рост', 'nav.settings':'Настройки',
+
+  'date.notStarted':'ещё не начато', 'date.today':'сегодня', 'date.yesterday':'вчера',
+  'date.daysAgo':'{n} дн. назад',
+
+  'type.oak':'Дуб', 'type.pine':'Сосна', 'type.palm':'Пальма',
+  'type.sakura':'Сакура', 'type.bush':'Куст', 'type.maple':'Клён',
+  'color.green':'Зелёный', 'color.blue':'Синий', 'color.purple':'Фиолетовый',
+  'color.red':'Красный', 'color.orange':'Оранжевый',
+  'season.winter':'Зимний лес', 'season.autumn':'Осень', 'season.summer':'Лето',
+  'season.spring':'Весна', 'season.start':'Начало пути',
+
+  'daily.name':'Ежедневные задания',
+  'home.habits':'Привычки', 'home.garden':'Мой сад целей',
+  'home.plant':'Посадить новое дерево', 'home.dailySub':'то, что делаешь каждый день',
+  'home.branches':'{done}/{total} веток', 'home.activity':'активность: {when}',
+
+  'tree.notFound':'Дерево не найдено', 'tree.allTrees':'Все деревья',
+  'tree.notebook':'Блокнот', 'tree.notebookTitle':'Блокнот дерева',
+  'tree.share':'Поделиться', 'tree.shareTitle':'Поделиться деревом',
+  'tree.goalLine':'Итоговая цель: «{goal}» · {pct}% пройдено', 'tree.pctDone':'{pct}% пройдено',
+  'tree.zoomIn':'Приблизить', 'tree.zoomOut':'Отдалить', 'tree.zoomReset':'Сбросить масштаб',
+  'tree.addTask':'Добавить задание', 'tree.addBranch':'Добавить ветку',
+  'tree.delAgain':'Нажмите ещё раз, чтобы удалить', 'tree.delConfirm':'Подтвердить удаление',
+  'tree.uncheck':'Снять отметку', 'tree.check':'Отметить выполненным',
+  'tree.newTaskHint':'например, выпить воду', 'tree.newBranchHint':'например, Математика',
+  'tree.newBranchAria':'Название новой ветки',
+  'tree.confirmDelTree':'Удалить дерево «{name}» вместе со всеми ветками?',
+
+  'stats.title':'Мой рост', 'stats.currentStreak':'текущий стрик', 'stats.bestStreak':'лучший стрик',
+  'stats.tasksDone':'выполнено задач', 'stats.treesCreated':'создано деревьев',
+  'stats.activePct':'процент активных дней', 'stats.activeOf':'{n} из {total} дней с приложением',
+  'stats.season':'Твой лес сейчас в фазе',
+  'stats.philosophy':'«Я не просто выполняю задачи. Я выращиваю своё будущее.»',
+
+  'settings.title':'Настройки', 'settings.themeLight':'Светлая', 'settings.themeDark':'Тёмная',
+  'settings.themeAuto':'Авто', 'settings.langAuto':'Авто',
+  'settings.taskReminder':'Напоминать записать тему', 'settings.sound':'Звуковые эффекты',
+  'settings.notifications':'Напоминания',
+  'settings.privacy':'GoalTree хранит данные только на этом устройстве, в этом браузере. Ничего никуда не отправляется само — деревом можно поделиться только вручную.',
+  'settings.aiTree':'Создать дерево через ИИ', 'settings.importFile':'Импортировать дерево из файла',
+  'settings.importPaste':'Вставить дерево текстом', 'settings.reset':'Сбросить все данные',
+  'settings.confirmReset':'Точно сбросить все данные? Это действие необратимо.',
+  'settings.philosophy':'«Каждое маленькое действие — лист.<br>Каждая завершённая цель — ветка.<br>Каждая мечта становится деревом.»',
+
+  'ai.title':'Дерево через ИИ',
+  'ai.sub':'Пусть чат-бот распишет план, а вы его проверите и поправите',
+  'ai.step1':'Скопируйте промт кнопкой ниже.',
+  'ai.step2':'Вставьте его в любой чат с ИИ и допишите свою цель в блоке «МОЯ ЦЕЛЬ».',
+  'ai.step3':'Полученный JSON вставьте в поле внизу этой страницы.',
+  'ai.warn':'ИИ уверенно ошибается в датах, ценах и правилах. Прежде чем идти по такому плану, проверьте факты в первоисточнике.',
+  'ai.copy':'Скопировать промт', 'ai.share':'Поделиться промтом',
+  'ai.pasteHere':'Готовый JSON вставьте сюда', 'ai.jsonAria':'JSON дерева',
+  'ai.pastePlaceholder':'Вставьте сюда JSON из ответа ИИ — целиком, от { до }',
+  'ai.parse':'Разобрать и добавить дерево',
+  'ai.note':'Обрамление кодового блока и лишние переводы строк уберутся сами. Перед добавлением вы увидите, что именно импортируется.',
+  'ai.shareTitle':'Промт GoalTree',
+  'ai.copied':'Промт скопирован. Вставьте его в чат с ИИ и допишите свою цель.',
+  'ai.copyFailed':'Скопировать автоматически не вышло — текст выделен целиком, скопируйте его вручную.',
+
+  'wiz.step1':'Шаг 1 · Название', 'wiz.step1Hint':'Как назовём это дерево?',
+  'wiz.namePlaceholder':'например, Спорт',
+  'wiz.step2':'Шаг 2 · Цель',
+  'wiz.step2Hint':'Какую конечную цель ты хочешь достичь? Хотя бы примерно — путь к ней ты выстроишь сам.',
+  'wiz.goalPlaceholder':'например, Поступить в Politecnico di Milano',
+  'wiz.step3':'Шаг 3 · Внешний вид', 'wiz.step3Hint':'Выбери вид и цвет дерева.',
+  'wiz.treeType':'Тип дерева', 'wiz.color':'Цвет', 'wiz.create':'Создать',
+
+  'export.title':'Поделиться деревом',
+  'export.hint':'Уйдёт <b>копия</b> «{name}» ({n} {tasks}). После добавления у получателя это будет отдельное дерево: ваши изменения к нему не попадут, а его — к вам.',
+  'export.marks':'Мои отметки', 'export.marksHint':'галочки о выполнении',
+  'export.notes':'Мои заметки', 'export.notesHint':'содержимое блокнота',
+  'export.file':'Отправить файлом', 'export.link':'Скопировать ссылку',
+  'export.linkAria':'Ссылка на дерево',
+  'export.note':'Ссылка удобна для небольших деревьев. Файл работает всегда — и это единственный способ, если приложение установлено из APK.',
+
+  'import.title':'Добавить дерево себе?', 'import.goal':'Цель: «{goal}»', 'import.noGoal':'Без итоговой цели',
+  'import.nameAria':'Название дерева', 'import.withNotes':'с заметками', 'import.noNotes':'без заметок',
+  'import.withMarks':'с отметками', 'import.noMarks':'без отметок', 'import.add':'Добавить себе',
+  'import.untitled':'Без названия', 'import.defaultName':'Импортированное дерево',
+  'paste.title':'Вставить дерево текстом',
+  'paste.hint':'Подойдёт и JSON, который выдал ИИ, и содержимое файла GoalTree. Обрамление кодового блока и лишние переводы строк уберутся сами.',
+  'paste.placeholder':'Вставьте сюда JSON — целиком, от { до }', 'paste.parse':'Разобрать',
+
+  'node.edit':'Редактировать', 'node.description':'Описание',
+  'reminder.title':'Запиши всё, что знаешь об этой теме', 'reminder.write':'Записать в блокнот',
+  'congrats.title':'Поздравляем!', 'congrats.body':'Твоё дерево «{name}» выросло полностью.',
+  'congrats.button':'Ура!',
+
+  'note.backToTree':'К дереву', 'note.sub':'Заметки по этому дереву',
+  'note.heading':'Заголовок', 'note.bold':'Жирный', 'note.boldShort':'Ж',
+  'note.italic':'Курсив', 'note.italicShort':'К', 'note.strike':'Зачёркнутый', 'note.strikeShort':'З',
+  'note.ul':'Маркированный список', 'note.ol':'Нумерованный список',
+  'note.link':'Ссылка на задание', 'note.aria':'Заметки',
+  'note.placeholder':'Запишите всё, что знаете по этой цели…',
+  'note.taskDeleted':'Задание удалено', 'note.nothingFound':'Ничего не найдено',
+  'note.filterPlaceholder':'Найти задание…', 'note.filterAria':'Фильтр заданий',
+  'note.limitReached':'Достигнут предел блокнота — дальше текст не сохранится. Сократите заметки.',
+  'note.pasteTooBig':'Вставка не поместится: блокнот ограничен {n} символами.',
+  'note.gone':'Задание удалено — переходить некуда.',
+
+  'toast.saveQuota':'Не удалось сохранить: хранилище заполнено. Освободите место — удалите ненужное дерево или сократите заметки.',
+  'toast.saveFailed':'Не удалось сохранить изменения.',
+  'toast.fileSaved':'Файл сохранён: {name}', 'toast.fileSaveFailed':'Не удалось сохранить файл.',
+  'toast.readFailed':'Не удалось прочитать файл.',
+  'toast.tooBigForLink':'Дерево слишком большое для ссылки — отправьте файлом.',
+  'toast.linkCopied':'Ссылка скопирована. Вставьте её в сообщение.',
+  'toast.linkCopyFailed':'Не удалось скопировать автоматически — ссылка показана ниже.',
+  'toast.parseFailed':'Не удалось разобрать дерево из файла.',
+  'toast.dataFailed':'Не удалось прочитать данные.',
+  'toast.treeAdded':'Дерево «{name}» добавлено.',
+
+  'err.notGoalTreeFile':'Не удалось прочитать файл: это не похоже на файл GoalTree.',
+  'err.emptyFile':'Файл пуст или повреждён.', 'err.notGoalTree':'Это не файл GoalTree.',
+  'err.noFormat':'В файле не указана версия формата.',
+  'err.newerFormat':'Файл сделан в более новой версии приложения — обновите GoalTree.',
+  'err.noTree':'В файле нет дерева.',
+  'err.tooDeep':'Дерево слишком глубокое (больше {n} уровней) — такой файл не поддерживается.',
+  'err.tooManyNodes':'В дереве больше {n} узлов — такой файл не поддерживается.',
+  'err.noDecompress':'Ссылка сжата, а этот браузер не умеет её распаковать. Попросите прислать файл.',
+  'err.badLink':'Ссылка повреждена или обрезана при пересылке. Попросите прислать файл.',
+  'err.emptyPaste':'Поле пустое — вставьте в него JSON, который выдал ИИ.',
+  'err.notJson':'Это не похоже на JSON. Скопируйте из ответа только сам блок с деревом — от первой скобки { до последней } включительно.',
+  'err.notOurJson':'JSON прочитался, но это не дерево GoalTree: в нём нет поля "app": "{app}". Проверьте, что скопирован весь объект, а не его часть.',
+
+  'plural.tasks':['задача','задачи','задач'], 'plural.nodes':['узел','узла','узлов']
+},
+en: {
+  'common.cancel':'Cancel', 'common.save':'Save', 'common.back':'Back',
+  'common.next':'Next', 'common.add':'Add', 'common.edit':'Edit',
+  'common.delete':'Delete', 'common.ok':'OK', 'common.name':'Name',
+  'common.optional':'optional',
+
+  'nav.forest':'Forest', 'nav.growth':'Growth', 'nav.settings':'Settings',
+
+  'date.notStarted':'not started yet', 'date.today':'today', 'date.yesterday':'yesterday',
+  'date.daysAgo':'{n} days ago',
+
+  'type.oak':'Oak', 'type.pine':'Pine', 'type.palm':'Palm',
+  'type.sakura':'Sakura', 'type.bush':'Shrub', 'type.maple':'Maple',
+  'color.green':'Green', 'color.blue':'Blue', 'color.purple':'Purple',
+  'color.red':'Red', 'color.orange':'Orange',
+  'season.winter':'Winter forest', 'season.autumn':'Autumn', 'season.summer':'Summer',
+  'season.spring':'Spring', 'season.start':'The beginning',
+
+  'daily.name':'Daily tasks',
+  'home.habits':'Habits', 'home.garden':'My garden of goals',
+  'home.plant':'Plant a new tree', 'home.dailySub':'the things you do every day',
+  'home.branches':'{done}/{total} branches', 'home.activity':'last active: {when}',
+
+  'tree.notFound':'Tree not found', 'tree.allTrees':'All trees',
+  'tree.notebook':'Notes', 'tree.notebookTitle':'Tree notebook',
+  'tree.share':'Share', 'tree.shareTitle':'Share this tree',
+  'tree.goalLine':'Goal: “{goal}” · {pct}% done', 'tree.pctDone':'{pct}% done',
+  'tree.zoomIn':'Zoom in', 'tree.zoomOut':'Zoom out', 'tree.zoomReset':'Reset zoom',
+  'tree.addTask':'Add a task', 'tree.addBranch':'Add a branch',
+  'tree.delAgain':'Press again to delete', 'tree.delConfirm':'Confirm deletion',
+  'tree.uncheck':'Mark as not done', 'tree.check':'Mark as done',
+  'tree.newTaskHint':'e.g. drink water', 'tree.newBranchHint':'e.g. Maths',
+  'tree.newBranchAria':'Name of the new branch',
+  'tree.confirmDelTree':'Delete the tree “{name}” with all of its branches?',
+
+  'stats.title':'My growth', 'stats.currentStreak':'current streak', 'stats.bestStreak':'best streak',
+  'stats.tasksDone':'tasks completed', 'stats.treesCreated':'trees planted',
+  'stats.activePct':'active days', 'stats.activeOf':'{n} of {total} days with the app',
+  'stats.season':'Your forest is now in',
+  'stats.philosophy':'“I am not just ticking off tasks. I am growing my future.”',
+
+  'settings.title':'Settings', 'settings.themeLight':'Light', 'settings.themeDark':'Dark',
+  'settings.themeAuto':'Auto', 'settings.langAuto':'Auto',
+  'settings.taskReminder':'Remind me to write it down', 'settings.sound':'Sound effects',
+  'settings.notifications':'Reminders',
+  'settings.privacy':'GoalTree keeps your data on this device, in this browser only. Nothing is sent anywhere on its own — a tree travels only when you share it yourself.',
+  'settings.aiTree':'Build a tree with AI', 'settings.importFile':'Import a tree from a file',
+  'settings.importPaste':'Paste a tree as text', 'settings.reset':'Erase all data',
+  'settings.confirmReset':'Erase all data for good? This cannot be undone.',
+  'settings.philosophy':'“Every small action is a leaf.<br>Every finished goal is a branch.<br>Every dream becomes a tree.”',
+
+  'ai.title':'A tree from AI',
+  'ai.sub':'Let a chatbot draft the plan, then check and correct it yourself',
+  'ai.step1':'Copy the prompt with the button below.',
+  'ai.step2':'Paste it into any AI chat and fill in your goal under “MY GOAL”.',
+  'ai.step3':'Paste the JSON you get back into the field at the bottom of this page.',
+  'ai.warn':'AI gets dates, prices and rules confidently wrong. Before following a plan like this, check the facts at the source.',
+  'ai.copy':'Copy the prompt', 'ai.share':'Share the prompt',
+  'ai.pasteHere':'Paste the finished JSON here', 'ai.jsonAria':'Tree JSON',
+  'ai.pastePlaceholder':'Paste the JSON from the AI answer here — all of it, from { to }',
+  'ai.parse':'Parse and add the tree',
+  'ai.note':'Code fences and stray line breaks are stripped automatically. You will see exactly what is being imported before it is added.',
+  'ai.shareTitle':'GoalTree prompt',
+  'ai.copied':'Prompt copied. Paste it into an AI chat and add your goal.',
+  'ai.copyFailed':'Could not copy automatically — the text is selected, copy it by hand.',
+
+  'wiz.step1':'Step 1 · Name', 'wiz.step1Hint':'What shall we call this tree?',
+  'wiz.namePlaceholder':'e.g. Fitness',
+  'wiz.step2':'Step 2 · Goal',
+  'wiz.step2Hint':'What do you ultimately want to reach? A rough idea is enough — you will map the path yourself.',
+  'wiz.goalPlaceholder':'e.g. Get into Politecnico di Milano',
+  'wiz.step3':'Step 3 · Looks', 'wiz.step3Hint':'Pick a species and a colour.',
+  'wiz.treeType':'Species', 'wiz.color':'Colour', 'wiz.create':'Create',
+
+  'export.title':'Share this tree',
+  'export.hint':'A <b>copy</b> of “{name}” ({n} {tasks}) will be sent. Once added it becomes a separate tree for them: your changes will not reach it, and theirs will not reach you.',
+  'export.marks':'My ticks', 'export.marksHint':'which tasks are done',
+  'export.notes':'My notes', 'export.notesHint':'the notebook contents',
+  'export.file':'Send as a file', 'export.link':'Copy a link',
+  'export.linkAria':'Link to the tree',
+  'export.note':'A link is handy for small trees. A file always works — and it is the only way if the app was installed from the APK.',
+
+  'import.title':'Add this tree?', 'import.goal':'Goal: “{goal}”', 'import.noGoal':'No final goal',
+  'import.nameAria':'Tree name', 'import.withNotes':'with notes', 'import.noNotes':'no notes',
+  'import.withMarks':'with ticks', 'import.noMarks':'no ticks', 'import.add':'Add it',
+  'import.untitled':'Untitled', 'import.defaultName':'Imported tree',
+  'paste.title':'Paste a tree as text',
+  'paste.hint':'Both the JSON an AI produced and the contents of a GoalTree file will do. Code fences and stray line breaks are stripped automatically.',
+  'paste.placeholder':'Paste the JSON here — all of it, from { to }', 'paste.parse':'Parse',
+
+  'node.edit':'Edit', 'node.description':'Description',
+  'reminder.title':'Write down everything you know about this', 'reminder.write':'Open the notebook',
+  'congrats.title':'Congratulations!', 'congrats.body':'Your tree “{name}” has grown all the way.',
+  'congrats.button':'Yes!',
+
+  'note.backToTree':'To the tree', 'note.sub':'Notes on this tree',
+  'note.heading':'Heading', 'note.bold':'Bold', 'note.boldShort':'B',
+  'note.italic':'Italic', 'note.italicShort':'I', 'note.strike':'Strikethrough', 'note.strikeShort':'S',
+  'note.ul':'Bulleted list', 'note.ol':'Numbered list',
+  'note.link':'Link to a task', 'note.aria':'Notes',
+  'note.placeholder':'Write down everything you know about this goal…',
+  'note.taskDeleted':'Task deleted', 'note.nothingFound':'Nothing found',
+  'note.filterPlaceholder':'Find a task…', 'note.filterAria':'Task filter',
+  'note.limitReached':'Notebook limit reached — further text will not be saved. Shorten your notes.',
+  'note.pasteTooBig':'That paste will not fit: the notebook is limited to {n} characters.',
+  'note.gone':'That task was deleted — nowhere to jump to.',
+
+  'toast.saveQuota':'Could not save: storage is full. Free some space — delete a tree you no longer need, or shorten your notes.',
+  'toast.saveFailed':'Could not save your changes.',
+  'toast.fileSaved':'File saved: {name}', 'toast.fileSaveFailed':'Could not save the file.',
+  'toast.readFailed':'Could not read the file.',
+  'toast.tooBigForLink':'This tree is too big for a link — send it as a file.',
+  'toast.linkCopied':'Link copied. Paste it into a message.',
+  'toast.linkCopyFailed':'Could not copy automatically — the link is shown below.',
+  'toast.parseFailed':'Could not read a tree out of that file.',
+  'toast.dataFailed':'Could not read the data.',
+  'toast.treeAdded':'Tree “{name}” added.',
+
+  'err.notGoalTreeFile':'Could not read the file: it does not look like a GoalTree file.',
+  'err.emptyFile':'The file is empty or damaged.', 'err.notGoalTree':'This is not a GoalTree file.',
+  'err.noFormat':'The file does not state a format version.',
+  'err.newerFormat':'This file was made by a newer version of the app — update GoalTree.',
+  'err.noTree':'There is no tree in this file.',
+  'err.tooDeep':'The tree is too deep (more than {n} levels) — such a file is not supported.',
+  'err.tooManyNodes':'The tree has more than {n} nodes — such a file is not supported.',
+  'err.noDecompress':'The link is compressed and this browser cannot unpack it. Ask for the file instead.',
+  'err.badLink':'The link is damaged or was truncated on the way. Ask for the file instead.',
+  'err.emptyPaste':'The field is empty — paste the JSON the AI gave you into it.',
+  'err.notJson':'That does not look like JSON. Copy only the tree block from the answer — from the first brace { to the last } inclusive.',
+  'err.notOurJson':'The JSON parsed, but it is not a GoalTree tree: it has no "app": "{app}" field. Check that you copied the whole object and not a part of it.',
+
+  'plural.tasks':['task','tasks'], 'plural.nodes':['node','nodes']
+}
+};
+
+let LANG = 'ru';
+// Absent in saves written before languages existed. Those users have only ever seen the
+// Russian app, so they keep it; a fresh install follows the browser instead.
+function effectiveLang(){
+  const pref = (DATA && DATA.settings && DATA.settings.lang) || 'ru';
+  if(pref === 'auto') return /^ru\b/i.test(navigator.language || '') ? 'ru' : 'en';
+  return STRINGS[pref] ? pref : 'ru';
+}
+function localeTag(){ return LANG === 'ru' ? 'ru-RU' : 'en-GB'; }
+function applyLang(){
+  LANG = effectiveLang();
+  document.documentElement.setAttribute('lang', LANG);
+}
+/* Missing keys fall back to Russian and then to the key itself, so a half-translated
+   build shows text rather than blanks — but either fallback means a key was forgotten. */
+function tr(key, vars){
+  let s = STRINGS[LANG] && STRINGS[LANG][key];
+  if(s === undefined) s = STRINGS.ru[key];
+  if(s === undefined) return key;
+  if(vars) for(const k in vars) s = s.split('{'+k+'}').join(vars[k]);
+  return s;
+}
+// Russian has three plural forms, English two; the table stores whichever the language
+// needs and this picks the right slot for n.
+function pluralize(n, key){
+  const forms = tr(key);
+  if(!Array.isArray(forms)) return forms;
+  if(LANG !== 'ru') return n === 1 ? forms[0] : forms[1];
+  const a = Math.abs(n) % 100, b = a % 10;
+  if(a > 10 && a < 20) return forms[2];
+  if(b > 1 && b < 5) return forms[1];
+  if(b === 1) return forms[0];
+  return forms[2];
+}
+// The daily tree is built in, so its stored name is a leftover of whichever language
+// created it — always show the translated one. Real trees keep what the user typed.
+function treeName(t){ return t && t.isDaily ? tr('daily.name') : (t ? t.name : ''); }
+
+// Only the emoji is data; the species names live in STRINGS under type.<key>.
 const TYPES = {
-  oak:{e:'🌳', n:'Дуб'}, pine:{e:'🌲', n:'Сосна'}, palm:{e:'🌴', n:'Пальма'},
-  sakura:{e:'🌸', n:'Сакура'}, bush:{e:'🌿', n:'Куст'}, maple:{e:'🍁', n:'Клён'}
+  oak:{e:'🌳'}, pine:{e:'🌲'}, palm:{e:'🌴'},
+  sakura:{e:'🌸'}, bush:{e:'🌿'}, maple:{e:'🍁'}
 };
 // Apple's system colours, in their "accessible" (darker) variants: these fill the root
 // node card, which carries white text on top.
 const COLORS = {
   green:'#248A3D', blue:'#0064D2', purple:'#8944AB', red:'#D70015', orange:'#C93400'
 };
-const COLOR_NAMES = {green:'Зелёный', blue:'Синий', purple:'Фиолетовый', red:'Красный', orange:'Оранжевый'};
 const SEASONS = [
-  {days:365, e:'❄', n:'Зимний лес'}, {days:180, e:'🍂', n:'Осень'},
-  {days:90, e:'🌿', n:'Лето'}, {days:30, e:'🌱', n:'Весна'}, {days:0, e:'🌤', n:'Начало пути'}
+  {days:365, e:'❄', k:'winter'}, {days:180, e:'🍂', k:'autumn'},
+  {days:90, e:'🌿', k:'summer'}, {days:30, e:'🌱', k:'spring'}, {days:0, e:'🌤', k:'start'}
 ];
 function seasonFor(daysActive){ return SEASONS.find(s=>daysActive>=s.days); }
 
@@ -618,7 +934,7 @@ function daysBetween(a,b){
   return Number.isFinite(diff) ? Math.round(diff) : 0;
 }
 
-function defaultSettings(){ return { theme:'auto', sound:false, notifications:false, taskReminder:true }; }
+function defaultSettings(){ return { theme:'auto', lang:'auto', sound:false, notifications:false, taskReminder:true }; }
 
 // Settings added after launch default to ON, so saves written before they existed (where
 // the key is simply absent) must read as enabled rather than disabled. Everything else
@@ -670,9 +986,11 @@ function load(){
     DATA = raw ? JSON.parse(raw) : defaultData();
   }catch(e){ DATA = defaultData(); }
   if(!DATA.settings) DATA.settings = defaultSettings();
+  migrateLanguage();
   migrateRemoveCorner();
   checkStreakDecay();
   applyTheme();
+  applyLang();
   render();
   startDayWatcher();
   startEscHandler();
@@ -689,6 +1007,13 @@ function startNotebookFlush(){
   NOTE_FLUSH_BOUND = true;
   document.addEventListener('visibilitychange', ()=>{ if(document.hidden) flushNotebook(); });
   window.addEventListener('pagehide', flushNotebook);
+}
+/* Saves written before the app spoke anything but Russian have no `lang` at all. Their
+   owners have only ever seen the Russian UI, so they keep it: silently switching them to
+   whatever their browser asks for would be a surprise, not a feature. A fresh install
+   gets 'auto' from defaultSettings() instead and follows the browser. */
+function migrateLanguage(){
+  if(DATA.settings.lang === undefined){ DATA.settings.lang = 'ru'; save(); }
 }
 /* The "start point" concept was removed: trees still carrying a leftover corner
    node get it dissolved, with its children promoted to be root's direct children. */
@@ -716,9 +1041,7 @@ function save(){
     console.error(e);
     const quota = e && (e.name === 'QuotaExceededError'
       || e.name === 'NS_ERROR_DOM_QUOTA_REACHED' || e.code === 22 || e.code === 1014);
-    showToast(quota
-      ? 'Не удалось сохранить: хранилище заполнено. Освободите место — удалите ненужное дерево или сократите заметки.'
-      : 'Не удалось сохранить изменения.', 'error');
+    showToast(tr(quota ? 'toast.saveQuota' : 'toast.saveFailed'), 'error');
     return false;
   }
 }
@@ -874,13 +1197,14 @@ function unlogCompletedDay(node, iso){
   if(!node.completedDays.length) delete node.completedDays;
 }
 function relDate(iso){
-  if(!iso) return 'ещё не начато';
+  if(!iso) return tr('date.notStarted');
   const g = daysBetween(iso, todayISO());
-  if(g<=0) return 'сегодня'; if(g===1) return 'вчера'; if(g<7) return g+' дн. назад';
+  if(g<=0) return tr('date.today'); if(g===1) return tr('date.yesterday');
+  if(g<7) return tr('date.daysAgo', {n:g});
   // build a LOCAL date: new Date('YYYY-MM-DD') is UTC midnight, which formats as the
   // previous day for anyone behind Greenwich
   const [y,m,d] = iso.slice(0,10).split('-').map(Number);
-  return new Date(y, m-1, d).toLocaleDateString('ru-RU',{day:'numeric',month:'short'});
+  return new Date(y, m-1, d).toLocaleDateString(localeTag(),{day:'numeric',month:'short'});
 }
 function stageOf(pct){
   if(pct>=100) return 'grown'; if(pct>=80) return 'ripe'; if(pct>=50) return 'big';
@@ -1002,16 +1326,16 @@ function renderTopbar(){
     <div class="brand">${ICON_MARK}<h1>GoalTree</h1></div>
     <div class="topbar-right">
       <div class="streak-pill" data-go="stats">${ringFlame(Math.min(100,DATA.streak.current))}<span class="num">${DATA.streak.current}</span></div>
-      <button class="icon-btn" data-go="settings" title="Настройки" aria-label="Настройки">${NAV_ICONS.gear}</button>
+      <button class="icon-btn" data-go="settings" title="${tr('nav.settings')}" aria-label="${tr('nav.settings')}">${NAV_ICONS.gear}</button>
     </div>
   </div>`;
 }
 
 function renderBottomNav(){
   return `<nav class="tabs"><div class="inner">
-    <button data-go="home" class="${VIEW==='home'||VIEW==='tree'||VIEW==='notebook'?'active':''}"><span class="ic">${NAV_ICONS.forest}</span><span class="t">Лес</span></button>
-    <button data-go="stats" class="${VIEW==='stats'?'active':''}"><span class="ic">${NAV_ICONS.chart}</span><span class="t">Рост</span></button>
-    <button data-go="settings" class="${VIEW==='settings'||VIEW==='aiprompt'?'active':''}"><span class="ic">${NAV_ICONS.gear}</span><span class="t">Настройки</span></button>
+    <button data-go="home" class="${VIEW==='home'||VIEW==='tree'||VIEW==='notebook'?'active':''}"><span class="ic">${NAV_ICONS.forest}</span><span class="t">${tr('nav.forest')}</span></button>
+    <button data-go="stats" class="${VIEW==='stats'?'active':''}"><span class="ic">${NAV_ICONS.chart}</span><span class="t">${tr('nav.growth')}</span></button>
+    <button data-go="settings" class="${VIEW==='settings'||VIEW==='aiprompt'?'active':''}"><span class="ic">${NAV_ICONS.gear}</span><span class="t">${tr('nav.settings')}</span></button>
   </div></nav>`;
 }
 
@@ -1029,44 +1353,44 @@ function renderHome(){
       ${t.isDaily ? '' : `<button class="del" data-del-tree="${t.id}">✕</button>`}
       <div class="body">
         <div class="row1"><span class="stage-emoji ${glow}">${emoji}</span>
-          <div class="titles"><h3>${esc(t.name)}</h3>
-          <p class="goal">${t.goal ? '🎯 '+esc(t.goal) : (t.isDaily?'то, что делаешь каждый день':'')}</p></div>
+          <div class="titles"><h3>${esc(treeName(t))}</h3>
+          <p class="goal">${t.goal ? '🎯 '+esc(t.goal) : (t.isDaily?tr('home.dailySub'):'')}</p></div>
         </div>
-        <div class="meta-row"><span>${p.done}/${p.total} веток</span><span>${pct}%</span></div>
+        <div class="meta-row"><span>${tr('home.branches',{done:p.done,total:p.total})}</span><span>${pct}%</span></div>
         <div class="bar"><i style="width:${pct}%; background:${color}"></i></div>
-        ${!t.isDaily ? `<div class="meta-row" style="margin-top:4px;"><span>активность: ${relDate(t.lastActivity)}</span></div>` : ''}
+        ${!t.isDaily ? `<div class="meta-row" style="margin-top:4px;"><span>${tr('home.activity',{when:relDate(t.lastActivity)})}</span></div>` : ''}
       </div>
     </div>`;
   }
   return `
-  <div class="section-title">Привычки</div>
+  <div class="section-title">${tr('home.habits')}</div>
   <div class="list">${card(daily)}</div>
-  <div class="section-title">Мой сад целей</div>
+  <div class="section-title">${tr('home.garden')}</div>
   <div class="list">
     ${custom.map(card).join('')}
-    <div class="card add-card" data-new-tree="1"><span class="plus">+</span>Посадить новое дерево</div>
+    <div class="card add-card" data-new-tree="1"><span class="plus">+</span>${tr('home.plant')}</div>
   </div>`;
 }
 
 function renderTreeView(){
   const t = findTree(CURRENT_TREE);
-  if(!t) return `<div class="empty">Дерево не найдено</div>`;
+  if(!t) return `<div class="empty">${tr('tree.notFound')}</div>`;
   const p = progressOf(t,t.root); const pct = p.total ? Math.round(p.done/p.total*100) : 0;
   const emoji = stageEmoji(t,pct);
   return `
-  <button class="back-btn" data-go="home"><span class="chev">‹</span>Все деревья</button>
-  <div class="tree-title-block"><span class="stage-emoji">${emoji}</span><h2>${esc(t.name)}</h2>
+  <button class="back-btn" data-go="home"><span class="chev">‹</span>${tr('tree.allTrees')}</button>
+  <div class="tree-title-block"><span class="stage-emoji">${emoji}</span><h2>${esc(treeName(t))}</h2>
     <button type="button" class="notebook-btn${notebookIsEmpty(t) ? '' : ' has-notes'}"
-      data-open-notebook="${t.id}" title="Блокнот дерева" aria-label="Блокнот дерева">${ACT_ICONS.note}<span>Блокнот</span></button>
+      data-open-notebook="${t.id}" title="${tr('tree.notebookTitle')}" aria-label="${tr('tree.notebookTitle')}">${ACT_ICONS.note}<span>${tr('tree.notebook')}</span></button>
     <button type="button" class="notebook-btn share-btn"
-      data-share-tree="${t.id}" title="Поделиться деревом" aria-label="Поделиться деревом">${ACT_ICONS.share}<span>Поделиться</span></button>
+      data-share-tree="${t.id}" title="${tr('tree.shareTitle')}" aria-label="${tr('tree.shareTitle')}">${ACT_ICONS.share}<span>${tr('tree.share')}</span></button>
   </div>
-  ${t.goal ? `<p class="tree-goal-line">Итоговая цель: «${esc(t.goal)}» · ${pct}% пройдено</p>` : `<p class="tree-goal-line">${pct}% пройдено</p>`}
+  ${t.goal ? `<p class="tree-goal-line">${tr('tree.goalLine',{goal:esc(t.goal),pct})}</p>` : `<p class="tree-goal-line">${tr('tree.pctDone',{pct})}</p>`}
   <div class="tree-scroll" id="tree-viewport">
     <div class="tree-zoom-controls">
-      <button type="button" class="zoom-btn" data-zoom="in" title="Приблизить">+</button>
-      <button type="button" class="zoom-btn" data-zoom="out" title="Отдалить">−</button>
-      <button type="button" class="zoom-btn" data-zoom="reset" title="Сбросить масштаб">⤾</button>
+      <button type="button" class="zoom-btn" data-zoom="in" title="${tr('tree.zoomIn')}">+</button>
+      <button type="button" class="zoom-btn" data-zoom="out" title="${tr('tree.zoomOut')}">−</button>
+      <button type="button" class="zoom-btn" data-zoom="reset" title="${tr('tree.zoomReset')}">⤾</button>
     </div>
     ${(()=>{ const c = renderTreeCanvas(t);
       return `<div class="tree" id="tree-canvas" style="width:${c.width}px; height:${c.height}px;">${c.html}</div>`; })()}
@@ -1114,16 +1438,16 @@ function renderNodeActionsRow(tree,node,isRoot){
   const armed = PENDING_DELETE===node.id;
   // Nested daily tasks are allowed now, so every node can grow children; only the wording
   // differs, since the daily root collects "задания" rather than "ветки".
-  const addLabel = isRoot && isDaily ? 'Добавить задание' : 'Добавить ветку';
+  const addLabel = isRoot && isDaily ? tr('tree.addTask') : tr('tree.addBranch');
 
   const actions = [
-    `<button type="button" class="icon-act" data-editnode="${tree.id}|${node.id}" title="Редактировать" aria-label="Редактировать">${ACT_ICONS.edit}</button>`,
+    `<button type="button" class="icon-act" data-editnode="${tree.id}|${node.id}" title="${tr('common.edit')}" aria-label="${tr('common.edit')}">${ACT_ICONS.edit}</button>`,
     `<button type="button" class="icon-act" data-addform="${node.id}" title="${addLabel}" aria-label="${addLabel}">${ACT_ICONS.add}</button>`
   ];
   if(canDelete){
     actions.push(armed
-      ? `<button type="button" class="icon-act danger-armed" data-confirmdel="${tree.id}|${node.id}" title="Нажмите ещё раз, чтобы удалить" aria-label="Подтвердить удаление">${ACT_ICONS.del}</button>`
-      : `<button type="button" class="icon-act" data-askdel="${node.id}" title="Удалить" aria-label="Удалить">${ACT_ICONS.del}</button>`);
+      ? `<button type="button" class="icon-act danger-armed" data-confirmdel="${tree.id}|${node.id}" title="${tr('tree.delAgain')}" aria-label="${tr('tree.delConfirm')}">${ACT_ICONS.del}</button>`
+      : `<button type="button" class="icon-act" data-askdel="${node.id}" title="${tr('common.delete')}" aria-label="${tr('common.delete')}">${ACT_ICONS.del}</button>`);
   }
   return `<div class="node-actions">${actions.join('')}</div>`;
 }
@@ -1138,11 +1462,13 @@ function renderNodeCard(tree,node,isRoot){
   const rootStyle = isRoot ? `style="background:${COLORS[tree.color||'green']};border-color:${COLORS[tree.color||'green']}"` : '';
 
   let inner = `<div class="node-card ${isRoot?'root':'task'} ${done&&checkable?'done':''}" ${rootStyle}>`;
-  inner += `<div class="node-title" title="${esc(node.text)}">${esc(node.text)}</div>`;
+  // The daily tree's root is built in, so its stored text is whatever language created it.
+  const label = (isRoot && tree.isDaily) ? tr('daily.name') : node.text;
+  inner += `<div class="node-title" title="${esc(label)}">${esc(label)}</div>`;
   // omitted entirely when absent, so a description-less card leaves no empty band
   if(node.description) inner += `<div class="node-desc" title="${esc(node.description)}">${esc(node.description)}</div>`;
   if(prog && prog.total>0) inner += `<div class="node-progress">${prog.done}/${prog.total}</div>`;
-  if(checkable) inner += `<div class="node-toggle-row"><button type="button" class="leaf-toggle ${done?'bloom':''}" data-toggle="${tree.id}|${node.id}" title="${done?'Снять отметку':'Отметить выполненным'}" aria-label="${done?'Снять отметку':'Отметить выполненным'}">${done?'🌸':'🍃'}</button></div>`;
+  if(checkable) inner += `<div class="node-toggle-row"><button type="button" class="leaf-toggle ${done?'bloom':''}" data-toggle="${tree.id}|${node.id}" title="${done?tr('tree.uncheck'):tr('tree.check')}" aria-label="${done?tr('tree.uncheck'):tr('tree.check')}">${done?'🌸':'🍃'}</button></div>`;
   inner += renderNodeActionsRow(tree,node,isRoot);
   inner += `</div>`;
   return inner;
@@ -1153,9 +1479,9 @@ function renderNodeCard(tree,node,isRoot){
 function renderAddPanel(tree,node){
   const isDaily = tree.isDaily;
   return `<form class="add-panel" data-addchild="${tree.id}|${node.id}">
-    <input type="text" id="add-branch-input" placeholder="${isDaily?'например, выпить воду':'например, Математика'}"
-      aria-label="Название новой ветки" required>
-    <button type="submit" title="Добавить" aria-label="Добавить">↵</button>
+    <input type="text" id="add-branch-input" placeholder="${isDaily?tr('tree.newTaskHint'):tr('tree.newBranchHint')}"
+      aria-label="${tr('tree.newBranchAria')}" required>
+    <button type="submit" title="${tr('common.add')}" aria-label="${tr('common.add')}">↵</button>
   </form>`;
 }
 
@@ -1252,51 +1578,60 @@ function renderStats(){
   const treesCreated = DATA.trees.filter(t=>!t.isDaily).length;
   const season = seasonFor(totalDays);
   return `
-  <div class="section-title">Мой рост</div>
+  <div class="section-title">${tr('stats.title')}</div>
   <div class="stats-grid">
-    <div class="stat-tile flame"><div class="val">🔥 ${s.current}</div><div class="lbl">текущий стрик</div></div>
-    <div class="stat-tile"><div class="val">🏆 ${s.best}</div><div class="lbl">лучший стрик</div></div>
-    <div class="stat-tile"><div class="val">🌱 ${s.totalCompleted}</div><div class="lbl">выполнено задач</div></div>
-    <div class="stat-tile"><div class="val">🌳 ${treesCreated}</div><div class="lbl">создано деревьев</div></div>
+    <div class="stat-tile flame"><div class="val">🔥 ${s.current}</div><div class="lbl">${tr('stats.currentStreak')}</div></div>
+    <div class="stat-tile"><div class="val">🏆 ${s.best}</div><div class="lbl">${tr('stats.bestStreak')}</div></div>
+    <div class="stat-tile"><div class="val">🌱 ${s.totalCompleted}</div><div class="lbl">${tr('stats.tasksDone')}</div></div>
+    <div class="stat-tile"><div class="val">🌳 ${treesCreated}</div><div class="lbl">${tr('stats.treesCreated')}</div></div>
     <div class="stat-tile ring-tile">
       ${ringProgress(activePct)}
-      <div><div class="lbl" style="margin-top:0;">процент активных дней</div>
-        <div style="font-size:13px;color:var(--label-2);margin-top:2px;">${s.activeDates.length} из ${totalDays} дней с приложением</div></div>
+      <div><div class="lbl" style="margin-top:0;">${tr('stats.activePct')}</div>
+        <div style="font-size:13px;color:var(--label-2);margin-top:2px;">${tr('stats.activeOf',{n:s.activeDates.length,total:totalDays})}</div></div>
     </div>
   </div>
-  <div class="season-badge"><span class="e">${season.e}</span><span class="n">Твой лес сейчас в фазе<b>${season.n}</b></span></div>
-  <div class="philosophy">«Я не просто выполняю задачи. Я выращиваю своё будущее.»</div>`;
+  <div class="season-badge"><span class="e">${season.e}</span><span class="n">${tr('stats.season')}<b>${tr('season.'+season.k)}</b></span></div>
+  <div class="philosophy">${tr('stats.philosophy')}</div>`;
 }
 
 function renderSettingsView(){
   const st = DATA.settings || defaultSettings();
   const themeChip = (key,e,n)=>`<div class="theme-chip ${st.theme===key?'active':''}" data-set-theme="${key}"><span class="e">${e}</span><span class="n">${n}</span></div>`;
+  // Language names are never translated: someone who cannot read the current UI has to be
+  // able to find their own language in the list.
+  const langChip = (key,e,n)=>`<div class="theme-chip ${(st.lang||'ru')===key?'active':''}" data-set-lang="${key}"><span class="e">${e}</span><span class="n">${n}</span></div>`;
   const switchRow = (key,label,val)=>`
     <div class="setting-row"><span>${label}</span><span class="switch ${val?'on':''}" data-toggle-setting="${key}"></span></div>`;
   return `
-  <div class="section-title">Настройки</div>
+  <div class="section-title">${tr('settings.title')}</div>
   <div class="settings-group">
     <div class="theme-row">
-      ${themeChip('light','☀','Светлая')}
-      ${themeChip('dark','🌙','Тёмная')}
-      ${themeChip('auto','🌗','Авто')}
+      ${themeChip('light','☀',tr('settings.themeLight'))}
+      ${themeChip('dark','🌙',tr('settings.themeDark'))}
+      ${themeChip('auto','🌗',tr('settings.themeAuto'))}
     </div>
   </div>
   <div class="settings-group">
-    ${switchRow('taskReminder','Напоминать записать тему', settingEnabled('taskReminder'))}
-    ${switchRow('sound','Звуковые эффекты', !!st.sound)}
-    ${switchRow('notifications','Напоминания', !!st.notifications)}
+    <div class="theme-row">
+      ${langChip('auto','🌐',tr('settings.langAuto'))}
+      ${langChip('ru','РУ','Русский')}
+      ${langChip('en','EN','English')}
+    </div>
   </div>
-  <p class="settings-note">GoalTree хранит данные только на этом устройстве, в этом браузере.
-    Ничего никуда не отправляется само — деревом можно поделиться только вручную.</p>
+  <div class="settings-group">
+    ${switchRow('taskReminder',tr('settings.taskReminder'), settingEnabled('taskReminder'))}
+    ${switchRow('sound',tr('settings.sound'), !!st.sound)}
+    ${switchRow('notifications',tr('settings.notifications'), !!st.notifications)}
+  </div>
+  <p class="settings-note">${tr('settings.privacy')}</p>
   <div class="settings-actions">
-    <button class="btn soft block" data-ai-prompt="1">🤖 Создать дерево через ИИ</button>
-    <button class="btn soft block" data-import-tree="1">📥 Импортировать дерево из файла</button>
-    <button class="btn soft block" data-import-paste="1">📋 Вставить дерево текстом</button>
+    <button class="btn soft block" data-ai-prompt="1">🤖 ${tr('settings.aiTree')}</button>
+    <button class="btn soft block" data-import-tree="1">📥 ${tr('settings.importFile')}</button>
+    <button class="btn soft block" data-import-paste="1">📋 ${tr('settings.importPaste')}</button>
   </div>
   <input type="file" id="import-file" accept="application/json,.json" hidden>
-  <button class="btn danger block" data-reset-all="1" style="margin-top:10px;">Сбросить все данные</button>
-  <div class="philosophy" style="margin-top:20px;">«Каждое маленькое действие — лист.<br>Каждая завершённая цель — ветка.<br>Каждая мечта становится деревом.»</div>`;
+  <button class="btn danger block" data-reset-all="1" style="margin-top:10px;">${tr('settings.reset')}</button>
+  <div class="philosophy" style="margin-top:20px;">${tr('settings.philosophy')}</div>`;
 }
 
 /* ============ AI PROMPT ============
@@ -1304,8 +1639,8 @@ function renderSettingsView(){
    then comes home through the paste importer below. No bot is named or linked: the text
    is generic and whichever one the user already has open will do.
 
-   Kept in sync with ai-prompt.md in the repo root — that file is the source, this is the
-   copy the app ships. The prompt spells out the allowed type/color values and every
+   Kept in sync with ai-prompt.md and ai-prompt.en.md in the repo root — those files are
+   the source, these are the copies the app ships, one per language. The prompt spells out the allowed type/color values and every
    length cap, so all of those are interpolated from the constants that actually enforce
    them: add a tree type or change SHARE_LIM and the text follows instead of quietly
    turning into a lie.
@@ -1314,7 +1649,9 @@ function renderSettingsView(){
    escapes. The JSON sample has braces but no dollar sign, so it survives verbatim; the
    one real casualty is the escaped-quote rule, which must be written \\" in source to
    read \" on screen. If you paste in text containing a literal `${`, escape the dollar. */
-function buildAiPrompt(){
+function buildAiPrompt(){ return LANG === 'en' ? aiPromptEn() : aiPromptRu(); }
+
+function aiPromptRu(){
   const types = Object.keys(TYPES).map(k => k + ' ' + TYPES[k].e).join(', ');
   const colors = Object.keys(COLORS).join(', ');
   return `Ты помогаешь мне спланировать цель и оформить её как дерево задач для приложения
@@ -1429,34 +1766,149 @@ GoalTree. На выходе мне нужен готовый файл дерев
 Ничего больше не добавляй.`;
 }
 
+function aiPromptEn(){
+  const types = Object.keys(TYPES).map(k => k + ' ' + TYPES[k].e).join(', ');
+  const colors = Object.keys(COLORS).join(', ');
+  return `You are helping me plan a goal and lay it out as a task tree for an app called
+GoalTree. What I need back is a ready-made tree file in JSON, which I will
+import into the app.
+
+## MY GOAL
+
+(fill these in, delete what does not apply)
+
+- Goal: ...
+- Deadline: ...
+- Where I am now: ...
+- What is already done: ...
+- Constraints: ...
+- Time I can put in: ...
+
+## What I need from you
+
+Break the goal into a tree of tasks and return it strictly in the shape described
+under "File format".
+
+### Requirements for the content
+
+1. 6-9 top-level branches — major directions of work, not individual actions.
+   Together they must cover the whole goal: not only the "main" part, but also
+   what people usually forget (money, paperwork, health, deadlines, other people,
+   a fallback plan).
+2. 3-6 subtasks per branch. Maximum depth is 3 levels from the root
+   (branch -> subtask -> sub-subtask). Use the third level only where it is
+   genuinely needed, not everywhere.
+3. Every task is a finished action with a checkable result. "Score 6.5 on IELTS"
+   — yes. "English" — no. The wording must answer "what exactly will I do, and
+   how will I know it is done".
+4. Tasks inside a branch go in the order they are actually done. If something has
+   to start well in advance because of a waiting time, say so in its description.
+5. Add a description only where it carries information: a concrete number, a
+   deadline, the order of steps, a common mistake, where to look. Do not restate
+   the title in other words. If there is nothing to say, leave the field out.
+6. 35-60 nodes in total. Fewer and the tree is useless; more and people stop
+   using it.
+7. Give deadlines and checkpoints a branch of their own: which dates are
+   critical, what to verify and when, what happens if something slips.
+8. Write in English, except for proper names (exams, organisations, programmes).
+
+### About facts
+
+If the goal depends on external rules, dates, exams, prices or procedures, check
+them online if you can, and state in the description when the data was accurate.
+If you cannot check, do not invent specific dates or amounts: write what needs to
+be verified and exactly where (site, page, authority). A wrong deadline in a
+tracker is worse than no deadline at all.
+
+## File format
+
+The answer is a single JSON object of exactly this shape:
+
+{
+  "app": "${SHARE_APP}",
+  "format": ${SHARE_FORMAT},
+  "tree": {
+    "name": "Short name",
+    "goal": "The goal in one phrase",
+    "type": "${IMPORT_DEFAULT_TYPE}",
+    "color": "${IMPORT_DEFAULT_COLOR}",
+    "root": {
+      "text": "The goal in one phrase",
+      "description": "One phrase about the horizon and the main condition for success.",
+      "children": [
+        {
+          "text": "Branch name",
+          "description": "Why this branch exists.",
+          "children": [
+            { "text": "Task with a description", "description": "Specifics: a number, a date, the order of steps.", "children": [] },
+            { "text": "Task without a description", "children": [] },
+            {
+              "text": "Task with nesting",
+              "children": [
+                { "text": "Sub-subtask", "children": [] }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
+
+Hard rules:
+
+- "app": "${SHARE_APP}" and "format": ${SHARE_FORMAT} — exactly so, or the app will refuse to
+  open the tree.
+- A node is only text, an optional description and children. Do not add id,
+  completed, pos or any other field: the owner of the tree ticks things off
+  themselves.
+- Every node has children; leaves get an empty array [].
+- type — exactly one of: ${types}.
+  color — one of: ${colors}. Any other value is silently replaced
+  with ${IMPORT_DEFAULT_TYPE} / ${IMPORT_DEFAULT_COLOR}.
+- tree.goal and root.text are the same phrase.
+- Length limits: name <= ${SHARE_LIM.name} characters (better <= 30, so it fits on a card),
+  goal <= ${SHARE_LIM.goal}, node text <= ${SHARE_LIM.text}, description <= ${SHARE_LIM.description}. Anything longer is cut on import.
+- Line breaks inside texts are not preserved — write each description as one paragraph.
+- It must be valid JSON: double quotes, no comments, no trailing commas. Escape
+  quotes inside text as \\" — or use typographic quotes.
+
+## Answer format
+
+1. First, 5-10 lines: the list of top-level branches and one phrase on what is in each.
+2. Then the whole JSON as one code block, complete, with no "..." anywhere.
+3. At the end, what I should check myself: facts you are unsure about, and
+   decisions that are mine to make.
+
+Add nothing else.`;
+}
+
 function renderAiPromptView(){
   // navigator.share only exists on (mostly mobile) browsers that have somewhere to share
   // TO — showing a button that throws everywhere else would be worse than no button.
   const canShare = typeof navigator.share === 'function';
   return `
-  <button class="back-btn" data-back-to-settings="1"><span class="chev">‹</span>Настройки</button>
+  <button class="back-btn" data-back-to-settings="1"><span class="chev">‹</span>${tr('settings.title')}</button>
   <div class="tree-title-block">
-    <span class="stage-emoji">🤖</span><h2>Дерево через ИИ</h2>
+    <span class="stage-emoji">🤖</span><h2>${tr('ai.title')}</h2>
   </div>
-  <p class="tree-goal-line">Пусть чат-бот распишет план, а вы его проверите и поправите</p>
+  <p class="tree-goal-line">${tr('ai.sub')}</p>
   <ol class="prompt-steps">
-    <li>Скопируйте промт кнопкой ниже.</li>
-    <li>Вставьте его в любой чат с ИИ и допишите свою цель в блоке «МОЯ ЦЕЛЬ».</li>
-    <li>Полученный JSON вставьте в поле внизу этой страницы.</li>
+    <li>${tr('ai.step1')}</li>
+    <li>${tr('ai.step2')}</li>
+    <li>${tr('ai.step3')}</li>
   </ol>
-  <p class="prompt-warn"><span>⚠</span><span>ИИ уверенно ошибается в датах, ценах и правилах.
-    Прежде чем идти по такому плану, проверьте факты в первоисточнике.</span></p>
+  <p class="prompt-warn"><span>⚠</span><span>${tr('ai.warn')}</span></p>
   <div class="prompt-actions">
-    <button class="btn primary block" data-copy-prompt="1">📋 Скопировать промт</button>
-    ${canShare ? `<button class="btn soft block" data-share-prompt="1">📤 Поделиться промтом</button>` : ''}
+    <button class="btn primary block" data-copy-prompt="1">📋 ${tr('ai.copy')}</button>
+    ${canShare ? `<button class="btn soft block" data-share-prompt="1">📤 ${tr('ai.share')}</button>` : ''}
   </div>
   <pre class="prompt-box" id="ai-prompt-text">${esc(buildAiPrompt())}</pre>
-  <div class="section-title">Готовый JSON вставьте сюда</div>
-  <textarea class="paste-box" aria-label="JSON дерева"
-    placeholder="Вставьте сюда JSON из ответа ИИ — целиком, от { до }"></textarea>
-  <button class="btn primary block" data-paste-import="1" style="margin-top:10px;">Разобрать и добавить дерево</button>
-  <p class="settings-note">Обрамление кодового блока и лишние переводы строк уберутся сами.
-    Перед добавлением вы увидите, что именно импортируется.</p>`;
+  <div class="section-title">${tr('ai.pasteHere')}</div>
+  <textarea class="paste-box" aria-label="${tr('ai.jsonAria')}"
+    placeholder="${tr('ai.pastePlaceholder')}"></textarea>
+  <button class="btn primary block" data-paste-import="1" style="margin-top:10px;">${tr('ai.parse')}</button>
+  <p class="settings-note">${tr('ai.note')}</p>`;
 }
 
 /* ---- wizard for new tree ---- */
@@ -1467,29 +1919,29 @@ function renderModal(){
     let body = '';
     if(WIZ_STEP===1){
       body = `
-        <h2>Шаг 1 · Название</h2>
-        <p class="hint">Как назовём это дерево?</p>
-        <input type="text" id="wiz-name" value="${esc(WIZ_DRAFT.name)}" placeholder="например, Спорт" autofocus>
-        <div class="modal-actions"><span></span><button class="btn primary" data-wiz-next="1">Далее</button></div>`;
+        <h2>${tr('wiz.step1')}</h2>
+        <p class="hint">${tr('wiz.step1Hint')}</p>
+        <input type="text" id="wiz-name" value="${esc(WIZ_DRAFT.name)}" placeholder="${tr('wiz.namePlaceholder')}" autofocus>
+        <div class="modal-actions"><span></span><button class="btn primary" data-wiz-next="1">${tr('common.next')}</button></div>`;
     }else if(WIZ_STEP===2){
       body = `
-        <h2>Шаг 2 · Цель</h2>
-        <p class="hint">Какую конечную цель ты хочешь достичь? Хотя бы примерно — путь к ней ты выстроишь сам.</p>
-        <textarea id="wiz-goal" placeholder="например, Поступить в Politecnico di Milano">${esc(WIZ_DRAFT.goal)}</textarea>
-        <div class="modal-actions"><button class="btn ghost" data-wiz-back="1">Назад</button><button class="btn primary" data-wiz-next="1">Далее</button></div>`;
+        <h2>${tr('wiz.step2')}</h2>
+        <p class="hint">${tr('wiz.step2Hint')}</p>
+        <textarea id="wiz-goal" placeholder="${tr('wiz.goalPlaceholder')}">${esc(WIZ_DRAFT.goal)}</textarea>
+        <div class="modal-actions"><button class="btn ghost" data-wiz-back="1">${tr('common.back')}</button><button class="btn primary" data-wiz-next="1">${tr('common.next')}</button></div>`;
     }else{
       const typeChips = Object.entries(TYPES).map(([k,v])=>
-        `<div class="type-chip ${WIZ_DRAFT.type===k?'active':''}" data-wiz-type="${k}"><span class="e">${v.e}</span><span class="n">${v.n}</span></div>`).join('');
+        `<div class="type-chip ${WIZ_DRAFT.type===k?'active':''}" data-wiz-type="${k}"><span class="e">${v.e}</span><span class="n">${tr('type.'+k)}</span></div>`).join('');
       const colorChips = Object.entries(COLORS).map(([k,v])=>
-        `<div class="color-chip ${WIZ_DRAFT.color===k?'active':''}" style="background:${v}" data-wiz-color="${k}" title="${COLOR_NAMES[k]}"></div>`).join('');
+        `<div class="color-chip ${WIZ_DRAFT.color===k?'active':''}" style="background:${v}" data-wiz-color="${k}" title="${tr('color.'+k)}"></div>`).join('');
       body = `
-        <h2>Шаг 3 · Внешний вид</h2>
-        <p class="hint">Выбери вид и цвет дерева.</p>
-        <label>Тип дерева</label>
+        <h2>${tr('wiz.step3')}</h2>
+        <p class="hint">${tr('wiz.step3Hint')}</p>
+        <label>${tr('wiz.treeType')}</label>
         <div class="type-grid">${typeChips}</div>
-        <label>Цвет</label>
+        <label>${tr('wiz.color')}</label>
         <div class="color-grid">${colorChips}</div>
-        <div class="modal-actions"><button class="btn ghost" data-wiz-back="1">Назад</button><button class="btn primary" data-wiz-create="1">Создать</button></div>`;
+        <div class="modal-actions"><button class="btn ghost" data-wiz-back="1">${tr('common.back')}</button><button class="btn primary" data-wiz-create="1">${tr('wiz.create')}</button></div>`;
     }
     return `<div class="overlay" data-close-modal="1"><div class="modal" data-stop="1">
       <div class="step-dots">${dots}</div>${body}
@@ -1505,14 +1957,13 @@ function renderModal(){
 // who were simply sent a chunk of JSON and never went near the prompt.
 function renderPasteModal(){
   return `<div class="overlay" data-close-modal="1"><div class="modal center" data-stop="1">
-    <h2>Вставить дерево текстом</h2>
-    <p class="hint">Подойдёт и JSON, который выдал ИИ, и содержимое файла GoalTree.
-      Обрамление кодового блока и лишние переводы строк уберутся сами.</p>
-    <textarea class="paste-box" aria-label="JSON дерева"
-      placeholder="Вставьте сюда JSON — целиком, от { до }"></textarea>
+    <h2>${tr('paste.title')}</h2>
+    <p class="hint">${tr('paste.hint')}</p>
+    <textarea class="paste-box" aria-label="${tr('ai.jsonAria')}"
+      placeholder="${tr('paste.placeholder')}"></textarea>
     <div class="modal-actions">
-      <button class="btn ghost" data-close-modal="1">Отмена</button>
-      <button class="btn primary" data-paste-import="1">Разобрать</button>
+      <button class="btn ghost" data-close-modal="1">${tr('common.cancel')}</button>
+      <button class="btn primary" data-paste-import="1">${tr('paste.parse')}</button>
     </div>
   </div></div>`;
 }
@@ -1527,21 +1978,19 @@ function renderExportModal(){
       <span class="switch ${on?'on':''}" data-export-opt="${key}"></span>
     </div>`;
   return `<div class="overlay" data-close-modal="1"><div class="modal center" data-stop="1">
-    <h2>Поделиться деревом</h2>
-    <p class="hint">Уйдёт <b>копия</b> «${esc(t.name)}» (${p.total} ${plural(p.total,'задача','задачи','задач')}).
-      После добавления у получателя это будет отдельное дерево: ваши изменения к нему не попадут, а его — к вам.</p>
+    <h2>${tr('export.title')}</h2>
+    <p class="hint">${tr('export.hint',{name:esc(treeName(t)), n:p.total, tasks:pluralize(p.total,'plural.tasks')})}</p>
     <div class="settings-group export-opts">
-      ${sw('marks','Мои отметки','галочки о выполнении', EXPORT_OPTS.marks)}
-      ${sw('notes','Мои заметки','содержимое блокнота', EXPORT_OPTS.notes)}
+      ${sw('marks',tr('export.marks'),tr('export.marksHint'), EXPORT_OPTS.marks)}
+      ${sw('notes',tr('export.notes'),tr('export.notesHint'), EXPORT_OPTS.notes)}
     </div>
     <div class="modal-actions export-actions">
-      <button class="btn primary block" data-export-file="1">📄 Отправить файлом</button>
-      <button class="btn ghost block" data-export-link="1">🔗 Скопировать ссылку</button>
-      <button class="btn ghost block" data-close-modal="1">Отмена</button>
+      <button class="btn primary block" data-export-file="1">📄 ${tr('export.file')}</button>
+      <button class="btn ghost block" data-export-link="1">🔗 ${tr('export.link')}</button>
+      <button class="btn ghost block" data-close-modal="1">${tr('common.cancel')}</button>
     </div>
-    ${EXPORT_LINK ? `<textarea class="share-link" readonly rows="3" aria-label="Ссылка на дерево">${esc(EXPORT_LINK)}</textarea>` : ''}
-    <p class="settings-note">Ссылка удобна для небольших деревьев. Файл работает всегда — и это
-      единственный способ, если приложение установлено из APK.</p>
+    ${EXPORT_LINK ? `<textarea class="share-link" readonly rows="3" aria-label="${tr('export.linkAria')}">${esc(EXPORT_LINK)}</textarea>` : ''}
+    <p class="settings-note">${tr('export.note')}</p>
   </div></div>`;
 }
 
@@ -1550,28 +1999,20 @@ function renderImportModal(){
   if(!d){ MODAL=null; return ''; }
   const t = d.payload.tree;
   return `<div class="overlay" data-close-modal="1"><div class="modal center" data-stop="1">
-    <h2>Добавить дерево себе?</h2>
-    <p class="hint">${t.goal ? 'Цель: «'+esc(t.goal)+'»' : 'Без итоговой цели'}</p>
-    <label>Название</label>
-    <input type="text" id="import-name" value="${esc(d.name)}" aria-label="Название дерева">
+    <h2>${tr('import.title')}</h2>
+    <p class="hint">${t.goal ? tr('import.goal',{goal:esc(t.goal)}) : tr('import.noGoal')}</p>
+    <label>${tr('common.name')}</label>
+    <input type="text" id="import-name" value="${esc(d.name)}" aria-label="${tr('import.nameAria')}">
     <div class="import-facts">
-      <div><b>${d.nodeCount}</b> ${plural(d.nodeCount,'узел','узла','узлов')}</div>
-      <div>${d.hasNotes ? '📓 с заметками' : 'без заметок'}</div>
-      <div>${d.hasMarks ? '✓ с отметками' : 'без отметок'}</div>
+      <div><b>${d.nodeCount}</b> ${pluralize(d.nodeCount,'plural.nodes')}</div>
+      <div>${d.hasNotes ? '📓 '+tr('import.withNotes') : tr('import.noNotes')}</div>
+      <div>${d.hasMarks ? '✓ '+tr('import.withMarks') : tr('import.noMarks')}</div>
     </div>
     <div class="modal-actions">
-      <button class="btn ghost" data-close-modal="1">Отмена</button>
-      <button class="btn primary" data-do-import="1">Добавить себе</button>
+      <button class="btn ghost" data-close-modal="1">${tr('common.cancel')}</button>
+      <button class="btn primary" data-do-import="1">${tr('import.add')}</button>
     </div>
   </div></div>`;
-}
-
-function plural(n, one, few, many){
-  const a = Math.abs(n) % 100, b = a % 10;
-  if(a > 10 && a < 20) return many;
-  if(b > 1 && b < 5) return few;
-  if(b === 1) return one;
-  return many;
 }
 
 /* ---- node edit popover. Every node is a full card now, so name/description/progress and
@@ -1586,14 +2027,14 @@ function renderNodePopover(){
 
 function renderNodeEditForm(node){
   return `
-    <h2>Редактировать</h2>
-    <label>Название</label>
+    <h2>${tr('node.edit')}</h2>
+    <label>${tr('common.name')}</label>
     <input type="text" id="edit-text" value="${esc(node.text)}" autofocus>
-    <label>Описание</label>
-    <textarea id="edit-desc" placeholder="необязательно">${esc(node.description||'')}</textarea>
+    <label>${tr('node.description')}</label>
+    <textarea id="edit-desc" placeholder="${tr('common.optional')}">${esc(node.description||'')}</textarea>
     <div class="modal-actions">
-      <button class="btn ghost" data-close-nodepop="1">Отмена</button>
-      <button class="btn primary" data-save-editnode="1">Сохранить</button>
+      <button class="btn ghost" data-close-nodepop="1">${tr('common.cancel')}</button>
+      <button class="btn primary" data-save-editnode="1">${tr('common.save')}</button>
     </div>`;
 }
 
@@ -1604,11 +2045,11 @@ function renderReminder(){
   const node = tree && findNode(tree.root, REMINDER.nodeId);
   if(!tree || !node){ REMINDER=null; return ''; } // node deleted meanwhile — stay silent
   return `<div class="overlay" data-close-reminder="1"><div class="modal center reminder" data-stop="1">
-    <h2>Запиши всё, что знаешь об этой теме</h2>
+    <h2>${tr('reminder.title')}</h2>
     <p class="reminder-topic">${esc(node.text)}</p>
     <div class="modal-actions reminder-actions">
-      <button class="btn primary block" data-reminder-notebook="${tree.id}|${node.id}">Записать в блокнот</button>
-      <button class="btn ghost block" data-close-reminder="1">Хорошо</button>
+      <button class="btn primary block" data-reminder-notebook="${tree.id}|${node.id}">${tr('reminder.write')}</button>
+      <button class="btn ghost block" data-close-reminder="1">${tr('common.ok')}</button>
     </div>
   </div></div>`;
 }
@@ -1669,7 +2110,7 @@ function resolveNoteLinks(tree, html){
     }else{
       // Keep whatever text is there: losing the wording would lose the note's meaning.
       a.classList.add('broken');
-      a.setAttribute('title', 'Задание удалено');
+      a.setAttribute('title', tr('note.taskDeleted'));
     }
   });
   return tpl.innerHTML;
@@ -1695,29 +2136,29 @@ function notebookIsEmpty(tree){
 
 function renderNotebookView(){
   const t = findTree(NOTEBOOK_TREE);
-  if(!t) return `<div class="empty">Дерево не найдено</div>`;
+  if(!t) return `<div class="empty">${tr('tree.notFound')}</div>`;
   const body = resolveNoteLinks(t, sanitizeNotebook(t.notebook || ''));
   const btn = (cmd,label,icon,extra)=>
     `<button type="button" class="fmt-btn" data-fmt="${cmd}" title="${label}" aria-label="${label}"${extra||''}>${icon}</button>`;
   return `
-  <button class="back-btn" data-back-to-tree="1"><span class="chev">‹</span>К дереву</button>
+  <button class="back-btn" data-back-to-tree="1"><span class="chev">‹</span>${tr('note.backToTree')}</button>
   <div class="tree-title-block">
-    <span class="stage-emoji">📓</span><h2>${esc(t.name)}</h2>
+    <span class="stage-emoji">📓</span><h2>${esc(treeName(t))}</h2>
   </div>
-  <p class="tree-goal-line">Заметки по этому дереву</p>
+  <p class="tree-goal-line">${tr('note.sub')}</p>
   <div class="note-wrap">
     <div class="note-toolbar" id="note-toolbar">
-      ${btn('formatBlock','Заголовок','H')}
-      ${btn('bold','Жирный','<b>Ж</b>')}
-      ${btn('italic','Курсив','<i>К</i>')}
-      ${btn('strikeThrough','Зачёркнутый','<s>З</s>')}
-      ${btn('insertUnorderedList','Маркированный список','•')}
-      ${btn('insertOrderedList','Нумерованный список','1.')}
+      ${btn('formatBlock',tr('note.heading'),'H')}
+      ${btn('bold',tr('note.bold'),'<b>'+tr('note.boldShort')+'</b>')}
+      ${btn('italic',tr('note.italic'),'<i>'+tr('note.italicShort')+'</i>')}
+      ${btn('strikeThrough',tr('note.strike'),'<s>'+tr('note.strikeShort')+'</s>')}
+      ${btn('insertUnorderedList',tr('note.ul'),'•')}
+      ${btn('insertOrderedList',tr('note.ol'),'1.')}
       <span class="fmt-sep"></span>
-      <button type="button" class="fmt-btn" data-insert-link="1" title="Ссылка на задание" aria-label="Ссылка на задание">🔗</button>
+      <button type="button" class="fmt-btn" data-insert-link="1" title="${tr('note.link')}" aria-label="${tr('note.link')}">🔗</button>
     </div>
     <div class="note-editor" id="note-editor" contenteditable="true" role="textbox" aria-multiline="true"
-         aria-label="Заметки" data-placeholder="Запишите всё, что знаете по этой цели…">${body}</div>
+         aria-label="${tr('note.aria')}" data-placeholder="${tr('note.placeholder')}">${body}</div>
   </div>`;
 }
 
@@ -1739,7 +2180,7 @@ function pickerRowsHtml(tree){
     }
     node.children.forEach(c=>walk(c, depth+1));
   })(tree.root, 0);
-  return rows.length ? rows.join('') : '<p class="hint">Ничего не найдено</p>';
+  return rows.length ? rows.join('') : `<p class="hint">${tr('note.nothingFound')}</p>`;
 }
 
 function openNodePicker(){
@@ -1751,10 +2192,10 @@ function openNodePicker(){
   wrap.className = 'overlay';
   wrap.id = 'node-picker';
   wrap.innerHTML = `<div class="modal center">
-    <h2>Ссылка на задание</h2>
-    <input type="text" id="picker-filter" class="picker-filter" placeholder="Найти задание…" aria-label="Фильтр заданий">
+    <h2>${tr('note.link')}</h2>
+    <input type="text" id="picker-filter" class="picker-filter" placeholder="${tr('note.filterPlaceholder')}" aria-label="${tr('note.filterAria')}">
     <div class="picker-list" id="picker-list">${pickerRowsHtml(tree)}</div>
-    <div class="modal-actions"><button class="btn ghost block" id="picker-cancel">Отмена</button></div>
+    <div class="modal-actions"><button class="btn ghost block" id="picker-cancel">${tr('common.cancel')}</button></div>
   </div>`;
   document.getElementById('app').appendChild(wrap);
 
@@ -1846,13 +2287,13 @@ function serializeTreeForShare(tree, opts){
 function parseSharePayload(text){
   let raw;
   try{ raw = JSON.parse(text); }
-  catch(_){ return {error:'Не удалось прочитать файл: это не похоже на файл GoalTree.'}; }
-  if(!raw || typeof raw !== 'object' || Array.isArray(raw)) return {error:'Файл пуст или повреждён.'};
-  if(raw.app !== SHARE_APP) return {error:'Это не файл GoalTree.'};
-  if(typeof raw.format !== 'number') return {error:'В файле не указана версия формата.'};
-  if(raw.format > SHARE_FORMAT) return {error:'Файл сделан в более новой версии приложения — обновите GoalTree.'};
+  catch(_){ return {error:tr('err.notGoalTreeFile')}; }
+  if(!raw || typeof raw !== 'object' || Array.isArray(raw)) return {error:tr('err.emptyFile')};
+  if(raw.app !== SHARE_APP) return {error:tr('err.notGoalTree')};
+  if(typeof raw.format !== 'number') return {error:tr('err.noFormat')};
+  if(raw.format > SHARE_FORMAT) return {error:tr('err.newerFormat')};
   const t = raw.tree;
-  if(!t || typeof t !== 'object' || !t.root || typeof t.root !== 'object') return {error:'В файле нет дерева.'};
+  if(!t || typeof t !== 'object' || !t.root || typeof t.root !== 'object') return {error:tr('err.noTree')};
 
   let count = 0, tooDeep = false, tooBig = false;
   (function scan(n, depth){
@@ -1862,8 +2303,8 @@ function parseSharePayload(text){
     const kids = Array.isArray(n.children) ? n.children : [];
     for(const k of kids){ if(k && typeof k === 'object') scan(k, depth+1); if(tooBig||tooDeep) return; }
   })(t.root, 1);
-  if(tooDeep) return {error:`Дерево слишком глубокое (больше ${IMPORT_MAX_DEPTH} уровней) — такой файл не поддерживается.`};
-  if(tooBig)  return {error:`В дереве больше ${IMPORT_MAX_NODES} узлов — такой файл не поддерживается.`};
+  if(tooDeep) return {error:tr('err.tooDeep',{n:IMPORT_MAX_DEPTH})};
+  if(tooBig)  return {error:tr('err.tooManyNodes',{n:IMPORT_MAX_NODES})};
 
   return {
     payload: raw,
@@ -1882,7 +2323,7 @@ function buildTreeFromPayload(payload, nameOverride){
   function makeNode(src){
     const id = uid();
     if(src.id) idMap.set(String(src.id), id);
-    const n = { id, text: clampStr(src.text, SHARE_LIM.text) || 'Без названия', children: [] };
+    const n = { id, text: clampStr(src.text, SHARE_LIM.text) || tr('import.untitled'), children: [] };
     const d = clampStr(src.description, SHARE_LIM.description);
     if(d) n.description = d;
     if(src.pos && isFinite(+src.pos.x) && isFinite(+src.pos.y)) n.pos = {x:+src.pos.x, y:+src.pos.y};
@@ -1897,7 +2338,7 @@ function buildTreeFromPayload(payload, nameOverride){
   const tree = {
     id: uid(),
     isDaily: false,          // exactly one daily tree may exist; a second breaks renderHome
-    name: clampStr(nameOverride, SHARE_LIM.name) || clampStr(t.name, SHARE_LIM.name) || 'Импортированное дерево',
+    name: clampStr(nameOverride, SHARE_LIM.name) || clampStr(t.name, SHARE_LIM.name) || tr('import.defaultName'),
     goal: clampStr(t.goal, SHARE_LIM.goal) || null,
     type: TYPES[t.type] ? t.type : IMPORT_DEFAULT_TYPE,   // unknown values would crash TYPES[...].e
     color: COLORS[t.color] ? t.color : IMPORT_DEFAULT_COLOR,
@@ -1972,13 +2413,13 @@ async function readShareHash(hash){
   try{
     let bytes = unb64url(m[2]);
     if(m[1] === 'z'){
-      if(typeof DecompressionStream !== 'function') return {error:'Ссылка сжата, а этот браузер не умеет её распаковать. Попросите прислать файл.'};
+      if(typeof DecompressionStream !== 'function') return {error:tr('err.noDecompress')};
       const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
       bytes = new Uint8Array(await new Response(stream).arrayBuffer());
     }
     return parseSharePayload(new TextDecoder().decode(bytes));
   }catch(_){
-    return {error:'Ссылка повреждена или обрезана при пересылке. Попросите прислать файл.'};
+    return {error:tr('err.badLink')};
   }
 }
 
@@ -1988,9 +2429,9 @@ function renderCongrats(){
   return `<div class="congrats" data-close-congrats="1">
     <div class="congrats-card" data-stop="1">
       <span class="big-emoji">${TYPES[t.type||'oak'].e}✨</span>
-      <h2>Поздравляем!</h2>
-      <p>Твоё дерево «${esc(t.name)}» выросло полностью.</p>
-      <button class="btn primary block" data-close-congrats="1">Ура!</button>
+      <h2>${tr('congrats.title')}</h2>
+      <p>${tr('congrats.body',{name:esc(treeName(t))})}</p>
+      <button class="btn primary block" data-close-congrats="1">${tr('congrats.button')}</button>
     </div>
   </div>`;
 }
@@ -2012,7 +2453,7 @@ function bindEvents(){
   }));
   app.querySelectorAll('[data-del-tree]').forEach(el=>el.addEventListener('click',(e)=>{
     e.stopPropagation();
-    if(confirmSafe('Удалить дерево «'+findTree(el.dataset.delTree).name+'» вместе со всеми ветками?')) actionDeleteTree(el.dataset.delTree);
+    if(confirmSafe(tr('tree.confirmDelTree',{name:treeName(findTree(el.dataset.delTree))}))) actionDeleteTree(el.dataset.delTree);
   }));
   const newTreeCard = app.querySelector('[data-new-tree]');
   if(newTreeCard) newTreeCard.addEventListener('click',()=>{ MODAL='newtree'; WIZ_STEP=1; WIZ_DRAFT=null; render(); });
@@ -2022,6 +2463,9 @@ function bindEvents(){
   }));
   app.querySelectorAll('[data-set-theme]').forEach(el=>el.addEventListener('click',()=>{
     DATA.settings.theme = el.dataset.setTheme; save(); applyTheme(); render();
+  }));
+  app.querySelectorAll('[data-set-lang]').forEach(el=>el.addEventListener('click',()=>{
+    DATA.settings.lang = el.dataset.setLang; save(); applyLang(); render();
   }));
   app.querySelectorAll('[data-toggle-setting]').forEach(el=>el.addEventListener('click',()=>{
     const key = el.dataset.toggleSetting;
@@ -2066,7 +2510,7 @@ function bindEvents(){
   app.querySelectorAll('[data-stop]').forEach(el=>el.addEventListener('click',(e)=>e.stopPropagation()));
   const resetBtn = app.querySelector('[data-reset-all]');
   if(resetBtn) resetBtn.addEventListener('click',()=>{
-    if(confirmSafe('Точно сбросить все данные? Это действие необратимо.')) actionResetAll();
+    if(confirmSafe(tr('settings.confirmReset'))) actionResetAll();
   });
 
   /* wizard */
@@ -2121,7 +2565,7 @@ function bindEvents(){
       if(!file) return;
       let text = '';
       try{ text = await file.text(); }
-      catch(_){ showToast('Не удалось прочитать файл.', 'error'); return; }
+      catch(_){ showToast(tr('toast.readFailed'), 'error'); return; }
       openImportPreview(parseSharePayload(text));
     });
   }
@@ -2380,7 +2824,7 @@ function bindNotebookEditor(){
       if(!tree) return;
       const html = sanitizeNotebook(ed.innerHTML);
       if((ed.textContent || '').length > NOTE_MAX_CHARS){
-        showToast('Достигнут предел блокнота — дальше текст не сохранится. Сократите заметки.', 'error');
+        showToast(tr('note.limitReached'), 'error');
       }
       if(tree.notebook !== html){ tree.notebook = html; save(); }
     }, 500);
@@ -2444,7 +2888,7 @@ function bindNotebookEditor(){
     const tpl = document.createElement('template'); tpl.innerHTML = clean;
     const addedLen = (tpl.content.textContent || '').length;
     if((ed.textContent || '').length + addedLen > NOTE_MAX_CHARS){
-      showToast('Вставка не поместится: блокнот ограничен ' + NOTE_MAX_CHARS.toLocaleString('ru-RU') + ' символами.', 'error');
+      showToast(tr('note.pasteTooBig', {n: NOTE_MAX_CHARS.toLocaleString(localeTag())}), 'error');
       return;
     }
     try{ document.execCommand('insertHTML', false, clean); }catch(_){}
@@ -2461,7 +2905,7 @@ function bindNotebookEditor(){
     const id = a.getAttribute('data-nodelink');
     const tree = findTree(NOTEBOOK_TREE);
     if(!tree || !findNode(tree.root, id)){
-      showToast('Задание удалено — переходить некуда.');
+      showToast(tr('note.gone'));
       return;
     }
     flushNotebook();
@@ -2520,7 +2964,7 @@ function focusNodeInTree(){
   if(!req) return;
   const viewport = document.getElementById('tree-viewport');
   const el = document.querySelector(`.node-pos[data-nodeid="${req.nodeId}"]`);
-  if(!viewport || !el){ showToast('Задание удалено — переходить некуда.'); return; }
+  if(!viewport || !el){ showToast(tr('note.gone')); return; }
 
   const rawX = parseFloat(el.dataset.rawx), rawY = parseFloat(el.dataset.rawy);
   const cx = rawX + TREE_CANVAS_OFF.x;                     // node centre, canvas space
@@ -2565,8 +3009,8 @@ async function exportTreeAsFile(){
     a.href = url; a.download = fname;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(()=>URL.revokeObjectURL(url), 1000);
-    showToast('Файл сохранён: ' + fname);
-  }catch(_){ showToast('Не удалось сохранить файл.', 'error'); }
+    showToast(tr('toast.fileSaved',{name:fname}));
+  }catch(_){ showToast(tr('toast.fileSaveFailed'), 'error'); }
 }
 
 async function exportTreeAsLink(){
@@ -2575,15 +3019,15 @@ async function exportTreeAsLink(){
   const link = await buildShareLink(serializeTreeForShare(t, EXPORT_OPTS));
   if(link.length > SHARE_LINK_MAX){
     // Truncated links are worse than no link: they look valid and fail on the far side.
-    showToast('Дерево слишком большое для ссылки — отправьте файлом.', 'error');
+    showToast(tr('toast.tooBigForLink'), 'error');
     return;
   }
   EXPORT_LINK = link;
   try{
     await navigator.clipboard.writeText(link);
-    showToast('Ссылка скопирована. Вставьте её в сообщение.');
+    showToast(tr('toast.linkCopied'));
   }catch(_){
-    showToast('Не удалось скопировать автоматически — ссылка показана ниже.');
+    showToast(tr('toast.linkCopyFailed'));
     render();
   }
 }
@@ -2605,14 +3049,14 @@ function stripCodeFence(text){
    clamping, type/color checks and notebook sanitising all still happen there, once. */
 function parsePastedTree(text){
   const s = stripCodeFence(text);
-  if(!s) return {error:'Поле пустое — вставьте в него JSON, который выдал ИИ.'};
+  if(!s) return {error:tr('err.emptyPaste')};
   let raw;
   try{ raw = JSON.parse(s); }
   catch(_){
-    return {error:'Это не похоже на JSON. Скопируйте из ответа только сам блок с деревом — от первой «{» до последней «}» включительно.'};
+    return {error:tr('err.notJson')};
   }
   if(!raw || typeof raw !== 'object' || Array.isArray(raw) || raw.app !== SHARE_APP){
-    return {error:'JSON прочитался, но это не дерево GoalTree: в нём нет поля "app": "' + SHARE_APP + '". Проверьте, что скопирован весь объект, а не его часть.'};
+    return {error:tr('err.notOurJson',{app:SHARE_APP})};
   }
   return parseSharePayload(s);
 }
@@ -2636,10 +3080,10 @@ async function copyAiPrompt(){
   try{
     if(!navigator.clipboard || !navigator.clipboard.writeText) throw new Error('no clipboard');
     await navigator.clipboard.writeText(text);
-    showToast('Промт скопирован. Вставьте его в чат с ИИ и допишите свою цель.');
+    showToast(tr('ai.copied'));
   }catch(_){
     selectAiPromptText();
-    showToast('Скопировать автоматически не вышло — текст выделен целиком, скопируйте его вручную.', 'error');
+    showToast(tr('ai.copyFailed'), 'error');
   }
 }
 
@@ -2658,16 +3102,16 @@ function selectAiPromptText(){
 
 // Rejects on cancel as well as on failure, and neither is worth a message.
 async function shareAiPrompt(){
-  try{ await navigator.share({title:'Промт GoalTree', text: buildAiPrompt()}); }
+  try{ await navigator.share({title:tr('ai.shareTitle'), text: buildAiPrompt()}); }
   catch(_){}
 }
 
 function openImportPreview(parsed){
   if(!parsed || parsed.error){
-    showToast((parsed && parsed.error) || 'Не удалось прочитать данные.', 'error');
+    showToast((parsed && parsed.error) || tr('toast.dataFailed'), 'error');
     return;
   }
-  IMPORT_DRAFT = Object.assign({}, parsed, {name: clampStr(parsed.payload.tree.name, SHARE_LIM.name) || 'Импортированное дерево'});
+  IMPORT_DRAFT = Object.assign({}, parsed, {name: clampStr(parsed.payload.tree.name, SHARE_LIM.name) || tr('import.defaultName')});
   MODAL = 'import';
   render();
 }
@@ -2679,7 +3123,7 @@ function commitImport(){
   if(!d) return;
   let tree;
   try{ tree = buildTreeFromPayload(d.payload, d.name); }
-  catch(_){ showToast('Не удалось разобрать дерево из файла.', 'error'); return; }
+  catch(_){ showToast(tr('toast.parseFailed'), 'error'); return; }
 
   DATA.trees.push(tree);
   if(!save()){
@@ -2688,7 +3132,7 @@ function commitImport(){
   }
   IMPORT_DRAFT = null; MODAL = null;
   openTree(tree.id);
-  showToast('Дерево «' + tree.name + '» добавлено.');
+  showToast(tr('toast.treeAdded',{name:tree.name}));
 }
 
 /* A link opened from a messenger carries the tree in the fragment. It is consumed once:

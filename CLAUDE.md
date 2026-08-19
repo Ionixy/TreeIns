@@ -106,6 +106,15 @@ DOM, no component framework, no diffing.
 - **Views**: `VIEW` is one of `'home' | 'tree' | 'stats' | 'settings'`, dispatched in
   `render()`. `MODAL` drives the new-tree wizard (`WIZ_STEP`/`WIZ_DRAFT`) and other
   overlays independently of `VIEW`.
+- **Languages**: every user-facing string lives in `STRINGS.ru` / `STRINGS.en` and is read
+  with `tr('key', {vars})`; `{placeholders}` are substituted from the second argument, and
+  counted nouns go through `pluralize(n, key)` because Russian needs three plural forms and
+  English two. Both tables must hold the same keys — a missing one silently falls back to
+  Russian. New UI must not contain prose: put it in the table. `DATA.settings.lang` is
+  `auto | ru | en` (`auto` follows `navigator.language`); saves written before this existed
+  are migrated to `ru`, so nobody's UI changes language under them. `localeTag()` feeds
+  `toLocaleDateString`/`toLocaleString`, and `buildAiPrompt()` picks between `aiPromptRu()`
+  and `aiPromptEn()`, whose sources are `ai-prompt.md` and `ai-prompt.en.md`.
 - **Styling**: the design language is Apple/iOS (HIG) — system font stack, iOS semantic
   colors, hairline separators, grouped inset lists, translucent blurred nav/tab bars,
   restrained shadows. Tokens are named after Apple's own vocabulary (`--label`, `--fill`,
