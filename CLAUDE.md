@@ -79,7 +79,11 @@ DOM, no component framework, no diffing.
   each other in a circle can neither duplicate, hang, nor disappear. Only the main notes
   are listed; the rest are reached through the note that links to them, and the count on a
   row is the whole subtree. Nothing can strand: a note is hidden only while something links
-  to it, and losing that link leaves it parentless, which puts it back on the list. Both labels are
+  to it, and losing that link leaves it parentless, which puts it back on the list. A new
+  note is a draft (`NOTE_DRAFT`): the object exists from the first keystroke so autosave has
+  somewhere to write, but leaving it without writing anything throws it away instead of
+  shelving a blank "Untitled". A tree's note is born holding the tree's name, and
+  `noteIsEmpty()` treats that prefill as empty for the same reason. Both labels are
   resolved at *display* time from
   the target's current title, so renaming propagates and a deleted target leaves a broken
   link that keeps its wording. `sanitizeNotebook()` strips every attribute and restores

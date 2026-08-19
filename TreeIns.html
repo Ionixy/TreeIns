@@ -443,6 +443,8 @@
   .congrats-card p{margin:0 0 20px; color:var(--label-2); font-size:15px; line-height:1.4;}
 
   /* ---------- notes ---------- */
+  /* The editor box runs to its own edge, so the action under it needs its own gap. */
+  .note-actions{margin-top:18px;}
   .note-title{width:100%; border:none; background:none; color:var(--label); padding:2px 0 4px;
     font-family:var(--font); font-size:26px; font-weight:700; letter-spacing:-.024em;
     margin:6px 0 0;}
@@ -723,7 +725,7 @@ ru: {
   'notes.createNamed':'Создать заметку «{name}»',
   'notes.deleted':'Заметка удалена', 'notes.confirmDelete':'Удалить заметку «{name}»?',
   'notes.noteGone':'Заметка удалена — переходить некуда.',
-  'notes.backToNotes':'Заметки', 'notes.contains':'{n} внутри',
+  'notes.backToNotes':'Заметки', 'notes.contains':'{n} внутри', 'notes.create':'Создать',
   'notes.mainOnes':'Основные', 'notes.alsoIn':'есть и в других заметках',
   'today.rings':'Сегодня', 'today.habits':'Привычки', 'today.tasks':'Задачи',
   'today.week':'Неделя', 'today.weekDays':'{n} из {total} дней',
@@ -890,7 +892,7 @@ en: {
   'notes.createNamed':'Create a note “{name}”',
   'notes.deleted':'Note deleted', 'notes.confirmDelete':'Delete the note “{name}”?',
   'notes.noteGone':'That note was deleted — nowhere to jump to.',
-  'notes.backToNotes':'Notes', 'notes.contains':'{n} inside',
+  'notes.backToNotes':'Notes', 'notes.contains':'{n} inside', 'notes.create':'Create',
   'notes.mainOnes':'Main notes', 'notes.alsoIn':'also linked elsewhere',
   'today.rings':'Today', 'today.habits':'Habits', 'today.tasks':'Tasks',
   'today.week':'Week', 'today.weekDays':'{n} of {total} days',
@@ -1026,6 +1028,7 @@ let TREE_ZOOM = {scale:1, x:0, y:0}; // pan/zoom state for the tree canvas, rese
 let TREE_ZOOM_READY = false; // whether the initial centering pass has run for the currently open tree
 let NOTE_OPEN = null;        // id of the note being edited (VIEW==='note')
 let NOTE_BACK = 'notes';     // where the editor's back button returns to: 'notes' | 'tree'
+let NOTE_DRAFT = null;       // id of a note created but not confirmed yet
 let NOTE_PICKER = null;      // {} while the insert-note-link picker is open
 let NOTE_PICKER_FILTER = '';
 let NOTE_SAVE_TIMER = null;  // debounce handle for the notebook's autosave
@@ -1561,27 +1564,28 @@ function renderToday(){
 /* ============ VIEW NAV ============ */
 // Every value data-go may carry. Add a view here at the same time as its tab, or the tab
 // will render and do nothing.
-function openTree(id){ flushNotebook(); CURRENT_TREE=id; VIEW='tree'; OPEN_FORM=null; PENDING_DELETE=null; NODE_POPOVER=null; REMINDER=null; NODE_PICKER=null; TREE_ZOOM={scale:1,x:0,y:0}; TREE_ZOOM_READY=false; render(); }
-function goHome(){ flushNotebook(); VIEW='home'; CURRENT_TREE=null; NODE_POPOVER=null; REMINDER=null; NODE_PICKER=null; render(); }
-function goToday(){ flushNotebook(); VIEW='today'; REMINDER=null; NODE_PICKER=null; render(); }
-function goStats(){ flushNotebook(); VIEW='stats'; REMINDER=null; NODE_PICKER=null; render(); }
-function goSettings(){ flushNotebook(); VIEW='settings'; REMINDER=null; NODE_PICKER=null; render(); }
+function openTree(id){ leavingNote(); CURRENT_TREE=id; VIEW='tree'; OPEN_FORM=null; PENDING_DELETE=null; NODE_POPOVER=null; REMINDER=null; NODE_PICKER=null; TREE_ZOOM={scale:1,x:0,y:0}; TREE_ZOOM_READY=false; render(); }
+function goHome(){ leavingNote(); VIEW='home'; CURRENT_TREE=null; NODE_POPOVER=null; REMINDER=null; NODE_PICKER=null; render(); }
+function goToday(){ leavingNote(); VIEW='today'; REMINDER=null; NODE_PICKER=null; render(); }
+function goStats(){ leavingNote(); VIEW='stats'; REMINDER=null; NODE_PICKER=null; render(); }
+function goSettings(){ leavingNote(); VIEW='settings'; REMINDER=null; NODE_PICKER=null; render(); }
 const GO_VIEW = { home:goHome, today:goToday, notes:goNotes, stats:goStats, settings:goSettings };
 // Its own screen rather than a modal: the prompt runs to ~90 lines, which a centred
 // dialog can't show on a phone without turning into a scroll-inside-a-scroll.
-function goAiPrompt(){ flushNotebook(); VIEW='aiprompt'; REMINDER=null; NODE_PICKER=null; render(); }
-function goNotes(){ flushNotebook(); VIEW='notes'; NOTE_OPEN=null; REMINDER=null; NODE_PICKER=null; render(); }
+function goAiPrompt(){ leavingNote(); VIEW='aiprompt'; REMINDER=null; NODE_PICKER=null; render(); }
+function goNotes(){ leavingNote(); VIEW='notes'; NOTE_OPEN=null; REMINDER=null; NODE_PICKER=null; render(); }
 // The tree's own button: one note per tree, made on first use so an untouched tree never
 // litters the section with a blank entry.
 function openNoteForTree(treeId){
   const tree = findTree(treeId);
   if(!tree) return;
   let note = noteForTree(treeId);
-  if(!note){ note = createNote({treeId, title:treeName(tree)}); save(); }
+  if(!note){ note = createNote({treeId, title:treeName(tree)}); save(); NOTE_DRAFT = note.id; }
   openNote(note.id, 'tree');
 }
 function openNote(noteId, back){
   flushNotebook();
+  discardEmptyDraft(noteId);   // following a link out of an untouched draft drops it
   NOTE_OPEN = noteId; NOTE_BACK = back || 'notes'; VIEW='note';
   OPEN_FORM=null; PENDING_DELETE=null; NODE_POPOVER=null; REMINDER=null;
   NODE_PICKER=null; NODE_PICKER_FILTER=''; NOTE_SAVED_RANGE=null;
@@ -1590,13 +1594,38 @@ function openNote(noteId, back){
 function actionNewNote(){
   const note = createNote({});
   save();
+  NOTE_DRAFT = note.id;
   openNote(note.id, 'notes');
 }
+// The note object exists from the first keystroke so autosave has somewhere to write, but
+// until it is confirmed it stays a draft: walking away from one that was never written in
+// throws it out, instead of leaving a blank "Untitled" on the shelf.
+function discardEmptyDraft(exceptId){
+  if(!NOTE_DRAFT || NOTE_DRAFT === exceptId) return;
+  const note = findNote(NOTE_DRAFT);
+  if(note && noteIsEmpty(note)){
+    DATA.notes = allNotes().filter(n => n.id !== note.id);
+    save();
+  }
+  NOTE_DRAFT = null;
+}
+// Anything written is kept, so this only ever confirms; it exists to end the draft state
+// and hand the reader back to where they came from.
+function actionConfirmNote(){
+  const note = NOTE_DRAFT && findNote(NOTE_DRAFT);
+  flushNotebook();
+  NOTE_DRAFT = null;
+  if(!note) return goNotes();
+  save();
+  const tree = note.treeId && findTree(note.treeId);
+  if(NOTE_BACK === 'tree' && tree) openTree(tree.id); else goNotes();
+}
+function leavingNote(){ flushNotebook(); discardEmptyDraft(); }
 function actionDeleteNote(id){
   const note = findNote(id);
   if(!note) return;
   DATA.notes = allNotes().filter(n => n.id !== id);
-  NOTE_OPEN = null; save(); goNotes();
+  NOTE_OPEN = null; NOTE_DRAFT = null; save(); goNotes();
   showToast(tr('notes.deleted'));
 }
 
@@ -2561,8 +2590,14 @@ function createNote(fields){
 }
 function noteTitle(note){ return (note && note.title || '').trim() || tr('notes.untitled'); }
 function noteIsEmpty(note){
-  const tpl = document.createElement('template'); tpl.innerHTML = (note && note.body) || '';
-  return !(note && note.title || '').trim() && !(tpl.content.textContent || '').trim()
+  if(!note) return true;
+  const tpl = document.createElement('template'); tpl.innerHTML = note.body || '';
+  const tree = note.treeId && findTree(note.treeId);
+  // A tree's note is born holding the tree's name; that prefill is not something the
+  // person wrote, so it must not keep an untouched note alive.
+  const title = (note.title || '').trim();
+  const titleIsPrefill = tree && title === treeName(tree);
+  return (!title || titleIsPrefill) && !(tpl.content.textContent || '').trim()
     && !tpl.content.querySelector('a[data-nodelink],a[data-notelink]');
 }
 function treeNoteIsEmpty(tree){
@@ -2693,8 +2728,10 @@ function renderNoteView(){
   ${links.length ? `<div class="section-title">${tr('notes.linked')}</div>
     <div class="settings-group">${links.map(n=>`<div class="setting-row note-row" data-open-note="${n.id}">
       <span class="note-row-body"><b>${esc(noteTitle(n))}</b></span><span class="chev-right">›</span></div>`).join('')}</div>` : ''}
-  <div class="settings-actions">
-    <button class="btn soft block" data-del-note="${note.id}">🗑 ${tr('common.delete')}</button>
+  <div class="settings-actions note-actions">
+    ${NOTE_DRAFT === note.id
+      ? `<button class="btn primary block" data-create-note="1">${tr('notes.create')}</button>`
+      : `<button class="btn soft block" data-del-note="${note.id}">🗑 ${tr('common.delete')}</button>`}
   </div>`;
 }
 
@@ -3342,6 +3379,8 @@ function bindEvents(){
     openNote(el.dataset.openNote, VIEW === 'note' ? NOTE_BACK : 'notes')));
   const newNote = app.querySelector('[data-new-note]');
   if(newNote) newNote.addEventListener('click', actionNewNote);
+  const createNoteBtn = app.querySelector('[data-create-note]');
+  if(createNoteBtn) createNoteBtn.addEventListener('click', actionConfirmNote);
   app.querySelectorAll('[data-del-note]').forEach(el=>el.addEventListener('click',()=>{
     const note = findNote(el.dataset.delNote);
     if(note && confirmSafe(tr('notes.confirmDelete',{name:noteTitle(note)}))) actionDeleteNote(note.id);
