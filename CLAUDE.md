@@ -57,7 +57,11 @@ DOM, no component framework, no diffing.
   `DATA` is the persisted part (trees, streak, settings); the rest is ephemeral view
   state that resets on reload.
 - **Data model**: `DATA.trees[]`, each tree has a `root` node. A node is
-  `{id, text, description?, children[], completed | completedDate, pos?}`.
+  `{id, text, description?, children[], completed | completedDate, pos?}`, plus the
+  completion history: `completedAt` (the day a goal task was ticked) or
+  `completedDays[]` (every day a daily habit was ticked, since `completedDate` only
+  survives until the next tick). Both are absent on anything ticked before they
+  existed, and an absent date means *unknown* — never today.
   `pos:{x,y}` is only present once a node has been manually dragged (see below) — its
   absence means "let the layout algorithm place it." The special daily-habits tree
   (`id:'daily'`, `isDaily:true`) has a flat `root.children` with no nested goal

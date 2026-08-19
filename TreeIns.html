@@ -846,6 +846,33 @@ function progressOf(tree,node){
   return {done,total};
 }
 function isDoneToday(node){ return !!node.completedDate && node.completedDate === todayISO(); }
+
+/* ---- completion history ----
+   Two shapes, because the two kinds of task are completed differently.
+
+   A goal task is completed once and stays completed, so a single `completedAt` date says
+   everything. A daily habit is completed again and again, and `completedDate` only ever
+   holds the LAST tick — tonight it is overwritten and yesterday's is gone. So habits keep
+   their own list of days.
+
+   Neither is reconstructible after the fact: whatever isn't written the day it happens is
+   lost for good, which is why this is recorded now rather than when the first chart needs
+   it. Tasks ticked before this existed simply have no date — every reader must treat an
+   absent one as "unknown" and skip it, never as today. */
+const HISTORY_MAX_DAYS = 800; // ~2 years per habit; the oldest fall off so a save that
+                              // lives for years can't creep towards the storage ceiling
+function logCompletedDay(node, iso){
+  if(!Array.isArray(node.completedDays)) node.completedDays = [];
+  // Ticks arrive in date order, so pushing keeps the list sorted for free.
+  if(!node.completedDays.includes(iso)) node.completedDays.push(iso);
+  if(node.completedDays.length > HISTORY_MAX_DAYS) node.completedDays = node.completedDays.slice(-HISTORY_MAX_DAYS);
+}
+// Unticking is a correction ("I marked it by mistake"), so the day leaves the history too.
+function unlogCompletedDay(node, iso){
+  if(!Array.isArray(node.completedDays)) return;
+  node.completedDays = node.completedDays.filter(d => d !== iso);
+  if(!node.completedDays.length) delete node.completedDays;
+}
 function relDate(iso){
   if(!iso) return 'ещё не начато';
   const g = daysBetween(iso, todayISO());
@@ -902,13 +929,18 @@ function actionToggle(treeId,nodeId){
   const before = progressOf(tree,tree.root); const pctBefore = before.total ? before.done/before.total*100 : 0;
 
   let justCompleted = false; // ticking ON only; unticking goes through the same function
+  const today = todayISO();
   if(treeId==='daily'){
     const wasDone = isDoneToday(node);
-    node.completedDate = wasDone ? null : todayISO();
+    node.completedDate = wasDone ? null : today;
+    if(wasDone) unlogCompletedDay(node, today); else logCompletedDay(node, today);
     justCompleted = !wasDone;
     if(!wasDone){ s.totalCompleted++; recordActivity(); } else s.totalCompleted = Math.max(0,s.totalCompleted-1);
   }else{
     node.completed = !node.completed;
+    // Deleted rather than nulled when unticked: most nodes are unfinished, and an absent
+    // key is both smaller on disk and the same "no date known" every reader handles.
+    if(node.completed) node.completedAt = today; else delete node.completedAt;
     justCompleted = node.completed;
     if(node.completed){ s.totalCompleted++; recordActivity(); } else s.totalCompleted = Math.max(0,s.totalCompleted-1);
   }
@@ -1783,6 +1815,9 @@ function serializeTreeForShare(tree, opts){
     if(d) o.description = d;
     if(n.pos && isFinite(+n.pos.x) && isFinite(+n.pos.y)) o.pos = {x:+n.pos.x, y:+n.pos.y};
     if(withMarks){
+      // The marks travel, the history does not: completedAt/completedDays are a record of
+      // the sender's own days, and the recipient is starting a separate copy of the tree.
+      // They land as a tick with no date, which readers already treat as "unknown".
       if(n.completed === true) o.completed = true;
       if(n.completedDate) o.completedDate = n.completedDate;
     }
