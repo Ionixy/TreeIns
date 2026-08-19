@@ -650,7 +650,18 @@ ru: {
   'err.notJson':'Это не похоже на JSON. Скопируйте из ответа только сам блок с деревом — от первой скобки { до последней } включительно.',
   'err.notOurJson':'JSON прочитался, но это не дерево GoalTree: в нём нет поля "app": "{app}". Проверьте, что скопирован весь объект, а не его часть.',
 
-  'plural.tasks':['задача','задачи','задач'], 'plural.nodes':['узел','узла','узлов']
+  'settings.backup':'Сохранить резервную копию', 'settings.restore':'Восстановить из копии',
+  'restore.title':'Восстановить из копии?',
+  'restore.hint':'Копия от {date}. Всё, что сейчас в приложении, будет заменено — отменить это нельзя.',
+  'restore.current':'Сейчас в приложении: {n} {trees}',
+  'restore.confirm':'Восстановить', 'restore.done':'Данные восстановлены из копии от {date}.',
+  'err.notBackup':'Это не резервная копия, а файл одного дерева. Добавьте его через «Импортировать дерево из файла».',
+  'err.backupNotTree':'Это резервная копия целиком, а не одно дерево. Восстановите её через «Восстановить из копии».',
+  'err.backupNewer':'Копия сделана в более новой версии приложения — обновите GoalTree.',
+  'err.backupBroken':'Файл повреждён: в нём нет данных GoalTree.',
+
+  'plural.tasks':['задача','задачи','задач'], 'plural.nodes':['узел','узла','узлов'],
+  'plural.trees':['дерево','дерева','деревьев']
 },
 en: {
   'common.cancel':'Cancel', 'common.save':'Save', 'common.back':'Back',
@@ -783,7 +794,18 @@ en: {
   'err.notJson':'That does not look like JSON. Copy only the tree block from the answer — from the first brace { to the last } inclusive.',
   'err.notOurJson':'The JSON parsed, but it is not a GoalTree tree: it has no "app": "{app}" field. Check that you copied the whole object and not a part of it.',
 
-  'plural.tasks':['task','tasks'], 'plural.nodes':['node','nodes']
+  'settings.backup':'Save a backup', 'settings.restore':'Restore from a backup',
+  'restore.title':'Restore from this backup?',
+  'restore.hint':'Backup from {date}. Everything currently in the app will be replaced — this cannot be undone.',
+  'restore.current':'Currently in the app: {n} {trees}',
+  'restore.confirm':'Restore', 'restore.done':'Data restored from the backup of {date}.',
+  'err.notBackup':'This is not a backup, it is a single tree file. Add it with “Import a tree from a file”.',
+  'err.backupNotTree':'This is a whole backup, not a single tree. Restore it with “Restore from a backup”.',
+  'err.backupNewer':'This backup was made by a newer version of the app — update GoalTree.',
+  'err.backupBroken':'The file is damaged: there is no GoalTree data in it.',
+
+  'plural.tasks':['task','tasks'], 'plural.nodes':['node','nodes'],
+  'plural.trees':['tree','trees']
 }
 };
 
@@ -893,6 +915,7 @@ let EXPORT_TREE = null;      // tree id being shared
 let EXPORT_OPTS = {marks:false, notes:false}; // both off by default: ticks and notes are private
 let EXPORT_LINK = null;      // built lazily; null until the user asks for a link
 let IMPORT_DRAFT = null;     // {payload, nodeCount, hasNotes, hasMarks, name} awaiting confirmation
+let RESTORE_DRAFT = null;    // {data, treeCount, nodeCount, savedAt} awaiting confirmation
 let CONGRATS_TREE = null;    // tree id currently showing congrats overlay
 let REMINDER = null;         // {treeId, nodeId} task that just got ticked, showing the "write it down" nudge
 let NODE_POPOVER = null;     // {treeId, nodeId} node currently open in the edit popover
@@ -1132,6 +1155,7 @@ function startEscHandler(){
     if(e.key!=='Escape') return;
     // the picker lives outside render(), so it closes itself rather than via a repaint
     if(NODE_PICKER){ closeNodePicker(); return; }
+    if(MODAL === 'restore'){ MODAL = null; RESTORE_DRAFT = null; render(); return; }
     if(!OPEN_FORM && !PENDING_DELETE && !NODE_POPOVER && !REMINDER) return;
     OPEN_FORM = null; PENDING_DELETE = null; NODE_POPOVER = null; REMINDER = null;
     render();
@@ -1625,11 +1649,14 @@ function renderSettingsView(){
   </div>
   <p class="settings-note">${tr('settings.privacy')}</p>
   <div class="settings-actions">
+    <button class="btn soft block" data-backup-save="1">💾 ${tr('settings.backup')}</button>
+    <button class="btn soft block" data-backup-restore="1">♻️ ${tr('settings.restore')}</button>
     <button class="btn soft block" data-ai-prompt="1">🤖 ${tr('settings.aiTree')}</button>
     <button class="btn soft block" data-import-tree="1">📥 ${tr('settings.importFile')}</button>
     <button class="btn soft block" data-import-paste="1">📋 ${tr('settings.importPaste')}</button>
   </div>
   <input type="file" id="import-file" accept="application/json,.json" hidden>
+  <input type="file" id="restore-file" accept="application/json,.json" hidden>
   <button class="btn danger block" data-reset-all="1" style="margin-top:10px;">${tr('settings.reset')}</button>
   <div class="philosophy" style="margin-top:20px;">${tr('settings.philosophy')}</div>`;
 }
@@ -1950,6 +1977,7 @@ function renderModal(){
   if(MODAL==='export') return renderExportModal();
   if(MODAL==='import') return renderImportModal();
   if(MODAL==='paste') return renderPasteModal();
+  if(MODAL==='restore') return renderRestoreModal();
   return '';
 }
 
@@ -1991,6 +2019,27 @@ function renderExportModal(){
     </div>
     ${EXPORT_LINK ? `<textarea class="share-link" readonly rows="3" aria-label="${tr('export.linkAria')}">${esc(EXPORT_LINK)}</textarea>` : ''}
     <p class="settings-note">${tr('export.note')}</p>
+  </div></div>`;
+}
+
+/* Restore is the one irreversible action in the app that isn't called "reset", so the
+   dialog spells out both sides: what is in the file, and what is about to be thrown away. */
+function renderRestoreModal(){
+  const d = RESTORE_DRAFT;
+  if(!d){ MODAL=null; return ''; }
+  const now = DATA.trees.length;
+  return `<div class="overlay" data-close-modal="1"><div class="modal center" data-stop="1">
+    <h2>${tr('restore.title')}</h2>
+    <p class="hint">${tr('restore.hint',{date:esc(d.savedAt)})}</p>
+    <div class="import-facts">
+      <div><b>${d.treeCount}</b> ${pluralize(d.treeCount,'plural.trees')}</div>
+      <div><b>${d.nodeCount}</b> ${pluralize(d.nodeCount,'plural.nodes')}</div>
+    </div>
+    <p class="settings-note">${tr('restore.current',{n:now, trees:pluralize(now,'plural.trees')})}</p>
+    <div class="modal-actions">
+      <button class="btn ghost" data-close-modal="1">${tr('common.cancel')}</button>
+      <button class="btn danger" data-do-restore="1">${tr('restore.confirm')}</button>
+    </div>
   </div></div>`;
 }
 
@@ -2290,6 +2339,8 @@ function parseSharePayload(text){
   catch(_){ return {error:tr('err.notGoalTreeFile')}; }
   if(!raw || typeof raw !== 'object' || Array.isArray(raw)) return {error:tr('err.emptyFile')};
   if(raw.app !== SHARE_APP) return {error:tr('err.notGoalTree')};
+  // The other file type, handed to this button — name the button that does take it.
+  if(raw.kind === BACKUP_KIND) return {error:tr('err.backupNotTree')};
   if(typeof raw.format !== 'number') return {error:tr('err.noFormat')};
   if(raw.format > SHARE_FORMAT) return {error:tr('err.newerFormat')};
   const t = raw.tree;
@@ -2441,6 +2492,116 @@ function esc(s){
   return d.innerHTML.replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
+/* ============ BACKUP ============
+   A backup is everything: every tree with its notes, ticks and history, the streak and the
+   settings. That is what separates it from sharing a tree, which deliberately strips all
+   of that — here the file is for you, so nothing is left out.
+
+   It carries `kind:'backup'` so the two file types can never be confused for one another:
+   each reader recognises the other's file and says which button to use instead, rather
+   than failing with a puzzling "there is no tree in this file". */
+const BACKUP_KIND = 'backup';
+const BACKUP_FORMAT = 1;
+
+function buildBackup(){
+  return { app: SHARE_APP, kind: BACKUP_KIND, format: BACKUP_FORMAT,
+           savedAt: todayISO(), data: DATA };
+}
+function countNodesIn(node){
+  let n = 1;
+  for(const c of (node && node.children) || []) n += countNodesIn(c);
+  return n;
+}
+
+async function saveBackupFile(){
+  const json = JSON.stringify(buildBackup());
+  const fname = 'goaltree-backup-' + todayISO() + '.json';
+  // Same handover as sharing a tree: on a phone the system sheet is how a file reaches
+  // Files/Drive at all, and everywhere else it falls back to a plain download.
+  try{
+    const file = new File([json], fname, {type:'application/json'});
+    if(navigator.canShare && navigator.canShare({files:[file]}) && navigator.share){
+      await navigator.share({files:[file], title:fname});
+      return;
+    }
+  }catch(e){
+    if(e && e.name === 'AbortError') return;
+  }
+  try{
+    const url = URL.createObjectURL(new Blob([json], {type:'application/json'}));
+    const a = document.createElement('a');
+    a.href = url; a.download = fname;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 1000);
+    showToast(tr('toast.fileSaved',{name:fname}));
+  }catch(_){ showToast(tr('toast.fileSaveFailed'), 'error'); }
+}
+
+function parseBackup(text){
+  let raw;
+  try{ raw = JSON.parse(String(text)); }
+  catch(_){ return {error:tr('err.notGoalTreeFile')}; }
+  if(!raw || typeof raw !== 'object' || Array.isArray(raw)) return {error:tr('err.emptyFile')};
+  if(raw.app !== SHARE_APP) return {error:tr('err.notGoalTree')};
+  // A single-tree share handed to the wrong button — say which button is the right one.
+  if(raw.kind !== BACKUP_KIND) return {error: raw.tree ? tr('err.notBackup') : tr('err.backupBroken')};
+  if(typeof raw.format !== 'number') return {error:tr('err.noFormat')};
+  if(raw.format > BACKUP_FORMAT) return {error:tr('err.backupNewer')};
+  const d = raw.data;
+  if(!d || typeof d !== 'object' || !Array.isArray(d.trees)) return {error:tr('err.backupBroken')};
+  if(d.trees.length > 0 && !d.trees.every(t => t && t.root)) return {error:tr('err.backupBroken')};
+  return { data: d, savedAt: String(raw.savedAt || '').slice(0,10),
+           treeCount: d.trees.length,
+           nodeCount: d.trees.reduce((n,t)=> n + countNodesIn(t.root), 0) };
+}
+
+/* Restored state has to survive render(), which is unforgiving: renderHome() reads the
+   daily tree without checking it exists, and the layout pass assumes every node has an id
+   and a children array. A backup from a future bug — or an edited file — must therefore be
+   repaired here rather than taken on trust, or the app would crash on the next paint and
+   leave no way back in. */
+function normalizeRestored(d){
+  const seen = new Set();
+  function fixNode(n){
+    if(!n || typeof n !== 'object') return null;
+    if(typeof n.text !== 'string') n.text = String(n.text == null ? '' : n.text);
+    if(!n.id || seen.has(n.id)) n.id = uid();
+    seen.add(n.id);
+    if(!Array.isArray(n.children)) n.children = [];
+    n.children = n.children.map(fixNode).filter(Boolean);
+    // A non-finite coordinate would place the node at NaN and take the whole canvas with it
+    if(n.pos && !(isFinite(+n.pos.x) && isFinite(+n.pos.y))) delete n.pos;
+    return n;
+  }
+  d.trees = (d.trees || []).filter(t => t && t.root).map(t => {
+    if(!t.id || seen.has(t.id)) t.id = uid();
+    seen.add(t.id);
+    if(typeof t.name !== 'string') t.name = tr('import.untitled');
+    t.root = fixNode(t.root) || { id: uid(), text: t.name, children: [] };
+    return t;
+  });
+  // renderHome() calls card(daily) unguarded, so exactly one daily tree must exist.
+  const dailies = d.trees.filter(t => t.isDaily);
+  if(!dailies.length) d.trees.unshift(defaultData().trees[0]);
+  else dailies.slice(1).forEach(t => { t.isDaily = false; });
+  if(!d.streak || typeof d.streak !== 'object') d.streak = defaultData().streak;
+  if(!Array.isArray(d.streak.activeDates)) d.streak.activeDates = [];
+  if(!d.settings || typeof d.settings !== 'object') d.settings = defaultSettings();
+  return d;
+}
+
+function actionRestoreBackup(){
+  if(!RESTORE_DRAFT) return;
+  const when = RESTORE_DRAFT.savedAt;
+  DATA = normalizeRestored(RESTORE_DRAFT.data);
+  RESTORE_DRAFT = null; MODAL = null;
+  CURRENT_TREE = null; NOTEBOOK_TREE = null; NODE_POPOVER = null; OPEN_FORM = null;
+  VIEW = 'home';
+  if(!save()) return;                 // storage full: the toast from save() already explains
+  applyTheme(); applyLang(); render();
+  showToast(tr('restore.done',{date:when}));
+}
+
 /* ============ EVENTS ============ */
 function bindEvents(){
   const app = document.getElementById('app');
@@ -2569,6 +2730,27 @@ function bindEvents(){
       openImportPreview(parseSharePayload(text));
     });
   }
+  const backupBtn = app.querySelector('[data-backup-save]');
+  if(backupBtn) backupBtn.addEventListener('click', saveBackupFile);
+  const restoreBtn = app.querySelector('[data-backup-restore]');
+  const restoreInput = app.querySelector('#restore-file');
+  if(restoreBtn && restoreInput){
+    restoreBtn.addEventListener('click', ()=>restoreInput.click());
+    restoreInput.addEventListener('change', async ()=>{
+      const file = restoreInput.files && restoreInput.files[0];
+      restoreInput.value = '';                 // so picking the same file twice still fires
+      if(!file) return;
+      let text = '';
+      try{ text = await file.text(); }
+      catch(_){ showToast(tr('toast.readFailed'), 'error'); return; }
+      const parsed = parseBackup(text);
+      if(parsed.error){ showToast(parsed.error, 'error'); return; }
+      RESTORE_DRAFT = parsed; MODAL = 'restore'; render();
+    });
+  }
+  app.querySelectorAll('[data-do-restore]').forEach(el=>
+    el.addEventListener('click', actionRestoreBackup));
+
   const pasteBtn = app.querySelector('[data-import-paste]');
   if(pasteBtn) pasteBtn.addEventListener('click', ()=>{ MODAL='paste'; render(); });
   app.querySelectorAll('[data-paste-import]').forEach(el=>

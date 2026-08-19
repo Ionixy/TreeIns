@@ -67,6 +67,14 @@ DOM, no component framework, no diffing.
   (`id:'daily'`, `isDaily:true`) has a flat `root.children` with no nested goal
   hierarchy and no drag/collapse behavior — most tree-view logic branches on
   `tree.isDaily`.
+- **Two file formats, one app**: sharing a tree writes `{app, format, tree}` and
+  deliberately strips ticks, history and notes; a backup writes `{app, kind:'backup',
+  format, savedAt, data}` and is the whole of `DATA`, losing nothing. `kind` is what keeps
+  them apart — each reader recognises the other's file and names the button that does take
+  it. Restoring replaces everything, so `normalizeRestored()` repairs the file first:
+  `renderHome()` reads the daily tree without checking it exists, and the layout pass
+  assumes ids and `children` arrays, so a damaged backup would otherwise crash the app on
+  the next paint with no way back in.
 - **Actions** (`action*` functions) mutate `DATA` directly, call `save()`, then
   `render()`. There's no event/reducer layer — read an action function top-to-bottom to
   see its full effect.
