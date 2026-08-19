@@ -581,21 +581,39 @@
     nav.tabs button.active{background:var(--tint-soft);}
     nav.tabs button:active{transform:scale(.98); opacity:1;}
 
-    /* Content sits in the space the sidebar leaves, and stops widening past a
-       comfortable measure instead of stretching text across the whole screen. */
+    /* Content sits in the space the sidebar leaves. */
     #app{max-width:none; margin:0;
       padding:0 32px calc(48px + var(--safe-b)) calc(var(--rail) + 32px + var(--safe-l));}
-    #app > .content{max-width:920px; width:100%; margin:0 auto;}
-    /* No longer full-bleed: the topbar belongs to the content column now. */
-    .topbar{margin:0 0 18px; padding:calc(18px + var(--safe-t)) 0 14px;
+    #app > .content{max-width:1080px; width:100%; margin:0 auto;}
+
+    /* The topbar runs the whole way from the sidebar to the window edge — a bar that
+       stops where the text column stops leaves its hairline hanging in mid-air. */
+    .topbar{margin:0 calc(-32px - var(--safe-r)) 18px -32px;
+      padding:calc(18px + var(--safe-t)) calc(32px + var(--safe-r)) 14px 32px;
       box-shadow:0 .5px 0 var(--separator);}
-    .tree-scroll{margin:0;}
+
+    /* The canvas is a workspace, not prose: it takes the whole width the window offers,
+       while the heading above it stays lined up with every other screen's column. */
+    #app > .content.view-tree{max-width:none;}
+    .view-tree > .back-btn, .view-tree > .tree-title-block, .view-tree > .tree-goal-line{
+      max-width:1080px; width:100%; margin-left:auto; margin-right:auto;}
+    .tree-scroll{margin:0 calc(-32px - var(--safe-r)) 0 -32px;}
+    .tree-zoom-controls{right:calc(24px + var(--safe-r)); bottom:24px;}
+
     .toast{left:auto; right:32px; transform:none; bottom:32px; width:auto; max-width:420px;}
 
-    /* Cards pair up rather than running as one long ribbon. */
-    .list{display:grid; grid-template-columns:1fr 1fr; gap:14px; align-items:start;}
+    /* As many card columns as actually fit, so a wide window fills a row instead of
+       leaving one card marooned next to an empty half-screen. */
+    .list{display:grid; grid-template-columns:repeat(auto-fill,minmax(290px,1fr));
+      gap:14px; align-items:start;}
     .stats-grid{grid-template-columns:repeat(4,1fr);}
     .stat-tile.ring-tile{grid-column:span 2;}
+
+    /* Reading and settings do not benefit from the extra width the canvas wants — a
+       1080px line of prose or a switch stranded from its label is worse, not better. */
+    .rings-card, .season-badge, .philosophy{max-width:720px;}
+    .settings-group, .settings-actions, .settings-note, .note-wrap, .note-title,
+    .prompt-steps, .prompt-warn, .prompt-actions, .prompt-box, .paste-box{max-width:720px;}
     .rings-card{padding:24px 28px;}
 
     /* A sheet has nothing to slide up from on a desktop, so it becomes a dialog. */
@@ -614,9 +632,10 @@
   }
   html[data-theme="dark"] .card:hover{box-shadow:0 0 0 .5px var(--separator);}
 
-  @media (min-width:1400px){
-    #app > .content{max-width:1040px;}
-    .list{grid-template-columns:repeat(3,1fr);}
+  @media (min-width:1600px){
+    #app > .content{max-width:1240px;}
+    .view-tree > .back-btn, .view-tree > .tree-title-block, .view-tree > .tree-goal-line{
+      max-width:1240px;}
   }
 </style>
 </head>
@@ -1693,7 +1712,7 @@ function actionDeleteNote(id){
 function render(){
   const app = document.getElementById('app');
   app.innerHTML = renderTopbar() +
-    `<div class="content">` +
+    `<div class="content view-${VIEW}">` +
     (VIEW==='home' ? renderHome() : VIEW==='today' ? renderToday() : VIEW==='tree' ? renderTreeView()
       : VIEW==='notes' ? renderNotesView()
       : VIEW==='note' ? renderNoteView()

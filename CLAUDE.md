@@ -159,9 +159,12 @@ DOM, no component framework, no diffing.
   emoji are kept only where they're content (tree species, task state).
 - **Desktop**: one `@media (min-width:900px)` block, no separate markup or build. The tab
   bar restyles into a left sidebar (`--rail` is the width, and `#app`'s left padding pays
-  for it — they must not drift apart), the content column stops at ~920px instead of the
-  phone's 460, home cards become a grid, and a bottom sheet turns into a centred dialog
-  since there is no bottom edge to slide from. 900px is chosen so a portrait tablet keeps
+  for it — they must not drift apart), home cards become an auto-filling grid, and a bottom
+  sheet turns into a centred dialog since there is no bottom edge to slide from. The topbar
+  and the tree canvas break out of the text column to run from the sidebar to the window
+  edge — `render()` stamps the view onto `.content` (`view-tree`, …) so the canvas screen
+  can drop the column while its heading keeps it. Prose and settings are capped at ~720px:
+  the extra width the canvas wants makes a line of text or a stranded switch worse. 900px is chosen so a portrait tablet keeps
   the touch layout. Hover states live only inside this block.
 - **Safe areas**: `--safe-t/-b/-l/-r` on `:root` default to `env(safe-area-inset-*)`, which
   covers browsers and the iOS standalone PWA. Android WebView reports those as 0 for the
