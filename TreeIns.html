@@ -1534,7 +1534,9 @@ function actionAddNode(treeId,parentId,text){
   const tree = findTree(treeId); const parent = findNode(tree.root,parentId);
   const node = { id:uid(), text:text.trim(), children:[] };
   if(treeId==='daily') node.completedDate=null; else node.completed=false;
-  parent.children.push(node); OPEN_FORM=null; save(); render();
+  parent.children.push(node);
+  placeNewNode(tree, parent, node);
+  OPEN_FORM=null; save(); render();
 }
 function actionDeleteNode(treeId,nodeId){
   const tree = findTree(treeId); const parent = findParent(tree.root,nodeId);
@@ -1827,22 +1829,68 @@ function computeTreeLayout(tree){
     let x;
     if(node.children.length===0){
       if(node.pos) x = node.pos.x;
-      else { x = nextX; nextX += TREE_COL_WIDTH; }
+      else { x = nextX + nodeJitter(node.id).x; nextX += TREE_SLOT; }
     }else{
       const childXs = node.children.map(c=>visit(c,false,row+1));
       const autoX = childXs.reduce((a,b)=>a+b,0)/childXs.length;
-      x = node.pos ? node.pos.x : autoX;
+      x = node.pos ? node.pos.x : autoX + nodeJitter(node.id).x;
     }
     layout.set(node.id,{x,row,posY:node.pos?node.pos.y:null});
     return x;
   }
   visit(tree.root,true,0);
 
-  // Every node is a card now, so the row pitch is a single constant.
-  for(const pos of layout.values()){
-    pos.y = pos.posY!==null ? pos.posY : pos.row*TREE_CARD_ROW_STEP;
+  // Rows give the pitch; the per-node offset breaks the ruled-paper look without letting
+  // anything drift far enough from its parent to read as belonging somewhere else.
+  for(const [id,pos] of layout){
+    pos.y = pos.posY!==null ? pos.posY : pos.row*TREE_CARD_ROW_STEP + nodeJitter(id).y;
   }
   return layout;
+}
+
+/* Freezing the whole tree is what makes one node movable on its own. The layout is
+   relative by nature — a parent sits at the average of its children, and an auto-placed
+   node takes the next free slot — so moving one node re-centres its ancestors and
+   re-tightens its siblings. Writing every current position down first turns that relative
+   arrangement into an absolute one: from then on a drag moves exactly the node dragged.
+   Called with the pre-drag layout, so nothing shifts at the moment it happens. */
+function pinTreePositions(tree){
+  const layout = computeTreeLayout(tree);
+  eachNode(tree.root, n=>{
+    if(n.pos) return;
+    const p = layout.get(n.id);
+    if(p) n.pos = { x: p.x, y: p.y };
+  });
+}
+function treeIsPinned(tree){
+  let pinned = false;
+  eachNode(tree.root, n=>{ if(n.pos) pinned = true; });
+  return pinned;
+}
+/* A node added to a frozen tree has no slot to be given, and the auto pass would put it at
+   x=0 on top of whatever lives there. It is placed under its parent instead, stepping out
+   to the sides and then down until it lands somewhere free — moving only itself, which is
+   the whole point of freezing. */
+function placeNewNode(tree, parent, node){
+  if(!parent.pos && !treeIsPinned(tree)) return;   // still auto-arranged: leave it be
+  const base = parent.pos || computeTreeLayout(tree).get(parent.id) || {x:0,y:0};
+  const taken = [];
+  eachNode(tree.root, n=>{ if(n !== node && n.pos) taken.push(n.pos); });
+  const free = p => taken.every(q =>
+    Math.abs(q.x - p.x) >= TREE_SLOT - 1 || Math.abs(q.y - p.y) >= TREE_CARD_ROW_STEP - 1);
+  // Candidates are ranked by how far they are from the parent, not by the order they were
+  // generated: scanning a row left to right would drop a new branch on the far side of the
+  // canvas just because the slots next to its parent were busy.
+  const cands = [];
+  for(let row = 1; row <= 6; row++)
+    for(let col = -8; col <= 8; col++)
+      cands.push({ x: base.x + col * TREE_SLOT, y: base.y + row * TREE_CARD_ROW_STEP });
+  // Sideways distance is weighted heavier than downwards: a child a few rows below its
+  // parent still reads as its child, while one parked far to the side reads as belonging
+  // to whatever branch it landed next to.
+  const d2 = p => 3 * (p.x - base.x) * (p.x - base.x) + (p.y - base.y) * (p.y - base.y);
+  cands.sort((a, b) => d2(a) - d2(b));
+  node.pos = cands.find(free) || { x: base.x, y: base.y + 7 * TREE_CARD_ROW_STEP };
 }
 
 // Icon-only action row. Every icon carries title + aria-label because a bare pictogram
@@ -1902,6 +1950,11 @@ function renderAddPanel(tree,node){
 
 // Card box is 160 wide; +30 of gutter keeps neighbouring cards visibly apart.
 const TREE_COL_WIDTH = 190;
+/* Spacing is deliberately wider than a card so the scatter below has somewhere to go.
+   TREE_SLOT is the horizontal pitch between neighbours; TREE_COL_WIDTH stays the width of
+   the wrapper a card sits in, because that wrapper is also the drag target — widening it
+   would turn the empty air beside a card into something you can grab by accident. */
+const TREE_SLOT = 230;
 // Tallest a card can get, from its CSS: 20 padding + 1 border + 2 title lines (36) +
 // 3 clamped description lines (47) + progress (13) + flower row (34) + icon row (30) +
 // 4 gaps of 5 (20) ≈ 204 (measured in the browser: 204.3). Both line clamps are what
@@ -1909,7 +1962,20 @@ const TREE_COL_WIDTH = 190;
 // change, this constant has almost no slack left.
 const TREE_CARD_MAX_H = 210;
 // Row pitch = that ceiling plus ~50 of breathing room for the connecting curve.
-const TREE_CARD_ROW_STEP = 250;
+const TREE_CARD_ROW_STEP = 290;
+/* How far a node may wander from its slot. Both are under half the slack between pitch and
+   card, so however two neighbours are nudged they cannot meet: 230-2*28 = 174 > 160 wide,
+   and 290-2*26 = 238 > 210 tall. Chaos that can overlap is not a layout. */
+const TREE_JITTER_X = 28, TREE_JITTER_Y = 26;
+/* Derived from the node's id, never from Math.random: the offset has to be the same on
+   every repaint, or the tree would twitch on each render. */
+function nodeJitter(id){
+  let h = 2166136261;
+  for(let i=0;i<id.length;i++){ h ^= id.charCodeAt(i); h = Math.imul(h, 16777619); }
+  const a = ((h >>> 0) % 2000) / 1000 - 1;                     // -1..1
+  const b = ((Math.imul(h, 2654435761) >>> 0) % 2000) / 1000 - 1;
+  return { x: a * TREE_JITTER_X, y: b * TREE_JITTER_Y };
+}
 
 // Edges anchor at a point INSIDE the card rather than at its bottom edge. Card height
 // still varies with content (root vs task, description present or not), so any single
@@ -3661,6 +3727,8 @@ function onNodeDragEnd(e){
     const dy = (e.clientY - NODE_DRAG.startClientY)/scale;
     const tree = findTree(CURRENT_TREE);
     const node = findNode(tree.root, nodeId);
+    // Before the move, so every other node keeps exactly the place it was just shown in.
+    pinTreePositions(tree);
     node.pos = { x: NODE_DRAG.startRawX + dx, y: NODE_DRAG.startRawY + dy };
     save();
     render();

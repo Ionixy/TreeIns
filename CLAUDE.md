@@ -114,7 +114,16 @@ DOM, no component framework, no diffing.
   by DOM flow (no nested `<ul><li>`, despite that being the old approach in
   `TreeIns-artifact.html`). `computeTreeLayout()` computes an `{x, y}` per node in a
   Reingold-Tilford-lite pass (parent x = average of children's x; a node with a saved
-  `node.pos` uses that instead and doesn't consume an auto x-slot). `renderTreeCanvas()`
+  `node.pos` uses that instead and doesn't consume an auto x-slot). Auto-placed nodes get a
+  per-node offset from `nodeJitter()` so the result reads as organic rather than ruled —
+  derived from the node id, never `Math.random`, or the tree would twitch on every repaint,
+  and bounded under half the slack between pitch (`TREE_SLOT`, `TREE_CARD_ROW_STEP`) and
+  card size so scattered nodes can never overlap. That layout is relative, so dragging one
+  node would re-centre its ancestors and re-tighten its siblings; `pinTreePositions()` is
+  therefore called with the pre-drag layout before a drop is written, freezing every node
+  where it already was. From then on the tree is absolute, and `placeNewNode()` finds a
+  free spot for anything added — nearest to its parent, weighting sideways distance heavier
+  than downwards, since a child parked far to the side reads as another branch's. `renderTreeCanvas()`
   turns that into absolutely-positioned `.node-pos` divs plus an SVG `<path>` per edge
   (bezier curves between parent-bottom and child-top anchors) — this decoupling of
   "position" from "content size" is deliberate, so a node's own text/button width can
