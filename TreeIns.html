@@ -448,16 +448,10 @@
     margin:6px 0 0;}
   .note-title:focus{outline:none;}
   .note-title::placeholder{color:var(--label-3);}
-  /* A main note carries full weight; a nested one steps down in size and colour, so the
-     list reads as a hierarchy at a glance rather than only through its indentation. */
   .note-row{cursor:pointer; gap:10px;}
   .note-row .note-row-body{display:flex; flex-direction:column; min-width:0; gap:1px; flex:1;}
   .note-row .note-row-body b{font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-  .note-row.nested .note-row-body b{font-size:15px; font-weight:500; color:var(--label-2);}
-  .note-row.nested + .note-row:not(.nested)::before{left:0;}
-  .note-guide{width:10px; align-self:stretch; margin:-9px 0 -9px -14px; flex:none;
-    border-left:1.5px solid var(--separator); border-bottom:1.5px solid var(--separator);
-    border-bottom-left-radius:6px; max-height:22px; margin-top:-2px;}
+
   .note-row .note-row-body small{font-size:13px; color:var(--label-2);
     overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .note-row .chev-right{color:var(--label-3); font-size:20px; line-height:1; flex:none;}
@@ -2623,10 +2617,20 @@ function backlinksTo(noteId){
 
 function renderNotesView(){
   const forest = noteForest();
-  // Indentation stops growing after a few levels: past that it eats the title on a phone
-  // and the guide lines carry the nesting anyway.
-  const INDENT = 18, MAX_INDENT = 4;
-  const rows = forest.map(({note, depth, children, alsoLinked})=>{
+  /* Only the main notes are listed. Everything else is reached by opening the note that
+     links to it, which is where it belongs — the list is a shelf of topics, not an index
+     of every page. Nothing can strand: a note is hidden only while something links to it,
+     and the moment that link goes away it has no parent left and returns to this list.
+
+     The count is the whole subtree, not the direct links, because none of it is visible
+     here. noteForest() emits depth-first with every note placed once, so everything after
+     a main note up to the next one is its descendants. */
+  const rows = forest.map((entry, i)=>{
+    if(entry.depth) return '';
+    let inside = 0;
+    for(let j = i + 1; j < forest.length && forest[j].depth > 0; j++) inside++;
+    const {note, alsoLinked} = entry;
+    const children = inside;
     const tree = note.treeId && findTree(note.treeId);
     // Built as parts and joined, so a note with nothing to say in its second line does not
     // start with a dangling separator.
@@ -2636,10 +2640,7 @@ function renderNotesView(){
     else { const snip = noteSnippet(note); if(snip) parts.push(esc(snip)); }
     if(alsoLinked) parts.push(tr('notes.alsoIn'));
     const sub = parts.join(' · ');
-    const pad = 16 + Math.min(depth, MAX_INDENT) * INDENT;
-    return `<div class="setting-row note-row${depth ? ' nested' : ''}" data-open-note="${note.id}"
-        style="padding-left:${pad}px">
-      ${depth ? '<span class="note-guide"></span>' : ''}
+    return `<div class="setting-row note-row" data-open-note="${note.id}">
       <span class="note-row-body">
         <b>${esc(noteTitle(note))}</b>
         <small>${sub}</small>
