@@ -59,6 +59,7 @@
     --safe-l: env(safe-area-inset-left, 0px);
     --safe-r: env(safe-area-inset-right, 0px);
     --r-card:18px; --r-ctl:12px; --r-small:10px;
+    --rail:216px;                      /* desktop sidebar width; content padding pays it */
     --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
     /* ui-rounded resolves to SF Pro Rounded on Apple platforms — used for numerals */
     --font-round:ui-rounded,"SF Pro Rounded",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
@@ -558,6 +559,65 @@
   .empty{text-align:center; padding:50px 10px; color:var(--label-2); font-size:16px;}
   .section-title{font-size:13px; font-weight:600; letter-spacing:-.005em;
     color:var(--label-2); margin:22px 0 8px 4px;}
+
+  /* ==========================================================
+     Desktop. Same markup throughout — a phone-width column on a
+     1440px screen is the thing being fixed, not the structure.
+     The breakpoint is 900px so a tablet in portrait (768) keeps
+     the touch layout, where a bottom bar is the right answer.
+     ========================================================== */
+  @media (min-width:900px){
+    /* The tab bar becomes a sidebar: same buttons, laid out as rows. */
+    nav.tabs{top:0; bottom:0; right:auto; width:var(--rail); display:block;
+      padding:0 0 20px; padding-left:var(--safe-l);
+      box-shadow:.5px 0 0 var(--separator); overflow-y:auto;}
+    nav.tabs .inner{flex-direction:column; width:100%; max-width:none; gap:2px;
+      padding:calc(18px + var(--safe-t)) 12px 12px;}
+    nav.tabs button{flex:none; flex-direction:row; justify-content:flex-start; gap:12px;
+      padding:9px 12px; border-radius:10px; text-align:left;}
+    nav.tabs button .ic{height:24px;}
+    nav.tabs button .ic svg{width:22px; height:22px;}
+    nav.tabs button .t{font-size:15px; font-weight:500;}
+    nav.tabs button.active{background:var(--tint-soft);}
+    nav.tabs button:active{transform:scale(.98); opacity:1;}
+
+    /* Content sits in the space the sidebar leaves, and stops widening past a
+       comfortable measure instead of stretching text across the whole screen. */
+    #app{max-width:none; margin:0;
+      padding:0 32px calc(48px + var(--safe-b)) calc(var(--rail) + 32px + var(--safe-l));}
+    #app > .content{max-width:920px; width:100%; margin:0 auto;}
+    /* No longer full-bleed: the topbar belongs to the content column now. */
+    .topbar{margin:0 0 18px; padding:calc(18px + var(--safe-t)) 0 14px;
+      box-shadow:0 .5px 0 var(--separator);}
+    .tree-scroll{margin:0;}
+    .toast{left:auto; right:32px; transform:none; bottom:32px; width:auto; max-width:420px;}
+
+    /* Cards pair up rather than running as one long ribbon. */
+    .list{display:grid; grid-template-columns:1fr 1fr; gap:14px; align-items:start;}
+    .stats-grid{grid-template-columns:repeat(4,1fr);}
+    .stat-tile.ring-tile{grid-column:span 2;}
+    .rings-card{padding:24px 28px;}
+
+    /* A sheet has nothing to slide up from on a desktop, so it becomes a dialog. */
+    .overlay{align-items:center;}
+    .modal{border-radius:16px; max-width:520px; margin:auto;
+      padding:24px 24px; box-shadow:var(--shadow-lift);}
+    .modal:not(.center)::before{display:none;}
+    .modal.center{max-width:420px;}
+
+    /* There is a pointer here, so things under it may react to it. */
+    .card:hover{box-shadow:0 2px 6px rgba(0,0,0,.07), 0 12px 32px rgba(0,0,0,.09);}
+    .setting-row.note-row:hover, .picker-row:hover{background:var(--fill);}
+    .btn:hover{filter:brightness(1.06);}
+    .icon-act:hover, .fmt-btn:hover, .zoom-btn:hover, .habit-tick:hover{background:var(--fill-strong);}
+    .notebook-btn:hover, .icon-btn:hover, .streak-pill:hover{background:var(--fill-strong);}
+  }
+  html[data-theme="dark"] .card:hover{box-shadow:0 0 0 .5px var(--separator);}
+
+  @media (min-width:1400px){
+    #app > .content{max-width:1040px;}
+    .list{grid-template-columns:repeat(3,1fr);}
+  }
 </style>
 </head>
 <body>

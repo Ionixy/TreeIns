@@ -157,6 +157,12 @@ DOM, no component framework, no diffing.
   `--separator`, `--tint`, `--bg-elev`), so new UI should reach for those rather than
   inventing a colour. Chrome icons are inline stroked SVGs (`NAV_ICONS` / `ACT_ICONS`);
   emoji are kept only where they're content (tree species, task state).
+- **Desktop**: one `@media (min-width:900px)` block, no separate markup or build. The tab
+  bar restyles into a left sidebar (`--rail` is the width, and `#app`'s left padding pays
+  for it — they must not drift apart), the content column stops at ~920px instead of the
+  phone's 460, home cards become a grid, and a bottom sheet turns into a centred dialog
+  since there is no bottom edge to slide from. 900px is chosen so a portrait tablet keeps
+  the touch layout. Hover states live only inside this block.
 - **Safe areas**: `--safe-t/-b/-l/-r` on `:root` default to `env(safe-area-inset-*)`, which
   covers browsers and the iOS standalone PWA. Android WebView reports those as 0 for the
   status and gesture bars, so `android/.../MainActivity.java` reads the real window insets
