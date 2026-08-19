@@ -1631,10 +1631,12 @@ function renderTopbar(){
 }
 
 function renderBottomNav(){
+  // The forest is the app's home, so it sits dead centre — thumb's reach on a phone, and
+  // the two tabs either side of it keep the order they had.
   return `<nav class="tabs"><div class="inner">
-    <button data-go="home" class="${VIEW==='home'||VIEW==='tree'?'active':''}"><span class="ic">${NAV_ICONS.forest}</span><span class="t">${tr('nav.forest')}</span></button>
     <button data-go="today" class="${VIEW==='today'?'active':''}"><span class="ic">${NAV_ICONS.today}</span><span class="t">${tr('nav.today')}</span></button>
     <button data-go="notes" class="${VIEW==='notes'||VIEW==='note'?'active':''}"><span class="ic">${NAV_ICONS.notes}</span><span class="t">${tr('nav.notes')}</span></button>
+    <button data-go="home" class="${VIEW==='home'||VIEW==='tree'?'active':''}"><span class="ic">${NAV_ICONS.forest}</span><span class="t">${tr('nav.forest')}</span></button>
     <button data-go="stats" class="${VIEW==='stats'?'active':''}"><span class="ic">${NAV_ICONS.chart}</span><span class="t">${tr('nav.growth')}</span></button>
     <button data-go="settings" class="${VIEW==='settings'||VIEW==='aiprompt'?'active':''}"><span class="ic">${NAV_ICONS.gear}</span><span class="t">${tr('nav.settings')}</span></button>
   </div></nav>`;
