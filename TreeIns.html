@@ -2986,12 +2986,44 @@ function openNotePicker(){
   bindNotePickerRows(wrap);
   filter.focus();
 }
+// A title is an identity here, not a label: two notes called the same thing are the same
+// subject written in two places, which is the one outcome linking is supposed to prevent.
+function noteNamed(title){
+  const t = String(title||'').trim().toLowerCase();
+  if(!t) return null;
+  return allNotes().find(n => noteTitle(n).trim().toLowerCase() === t) || null;
+}
+/* Making a note by name from inside a tree's note. If a task in that tree carries the same
+   name, the new note becomes that task's note — so the one written from the notebook and
+   the one the task's own button opens are a single note, reachable from both sides.
+   Otherwise it is an ordinary note. */
+function createNoteNamed(title){
+  const existing = noteNamed(title);
+  if(existing) return existing;
+  const open = NOTE_OPEN && findNote(NOTE_OPEN);
+  const tree = open && open.treeId ? findTree(open.treeId) : null;
+  const want = title.trim().toLowerCase();
+  let task = null;
+  if(tree) eachNode(tree.root, n => {
+    if(!task && n.id !== tree.root.id && String(n.text||'').trim().toLowerCase() === want
+       && !noteForNode(tree.id, n.id)) task = n;
+  });
+  return task ? createNote({ treeId: tree.id, nodeId: task.id, title: task.text })
+              : createNote({ title: title.trim() });
+}
+
 function notePickerRowsHtml(){
   const q = NOTE_PICKER_FILTER.trim().toLowerCase();
-  const rows = allNotes()
-    .filter(n => n.id !== NOTE_OPEN && (!q || noteTitle(n).toLowerCase().includes(q)))
-    .map(n => `<button type="button" class="picker-row" data-picknote="${n.id}">${esc(noteTitle(n))}</button>`);
-  if(q) rows.push(`<button type="button" class="picker-row picker-create" data-createnote="${esc(q)}">${tr('notes.createNamed',{name:esc(NOTE_PICKER_FILTER.trim())})}</button>`);
+  const found = allNotes().filter(n => n.id !== NOTE_OPEN && (!q || noteTitle(n).toLowerCase().includes(q)));
+  // An exact match goes first: it is what the typed name means, and burying it under
+  // substring matches is how people end up making a second note instead of finding the one.
+  found.sort((a,b) => (noteTitle(b).toLowerCase() === q) - (noteTitle(a).toLowerCase() === q));
+  const rows = found.map(n =>
+    `<button type="button" class="picker-row" data-picknote="${n.id}">${esc(noteTitle(n))}</button>`);
+  // No "create" offer when that note already exists — the row above it is the answer.
+  if(q && !found.some(n => noteTitle(n).toLowerCase() === q)){
+    rows.push(`<button type="button" class="picker-row picker-create" data-createnote="1">${tr('notes.createNamed',{name:esc(NOTE_PICKER_FILTER.trim())})}</button>`);
+  }
   return rows.length ? rows.join('') : `<p class="hint">${tr('note.nothingFound')}</p>`;
 }
 function bindNotePickerRows(wrap){
@@ -2999,8 +3031,7 @@ function bindNotePickerRows(wrap){
     const id = b.dataset.picknote; closeNotePicker(); insertNoteLink(id);
   }));
   wrap.querySelectorAll('[data-createnote]').forEach(b=>b.addEventListener('click',()=>{
-    const title = NOTE_PICKER_FILTER.trim();
-    const note = createNote({title});
+    const note = createNoteNamed(NOTE_PICKER_FILTER.trim());
     save(); closeNotePicker(); insertNoteLink(note.id);
   }));
 }

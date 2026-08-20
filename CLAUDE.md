@@ -72,7 +72,11 @@ DOM, no component framework, no diffing.
   identifies it, so nothing may clear a `nodeId` while the `treeId` stays, or a tree ends
   up with two. With both set it belongs to one task, and `noteChildren()` files it inside
   the tree's note by construction rather than by a link someone had to write. The root's
-  note IS the tree's note. Deleting a task keeps its note, still filed under the tree. They used
+  note IS the tree's note. Deleting a task keeps its note, still filed under the tree.
+  A title is an identity, not a label: `createNoteNamed()` returns the existing note of
+  that name instead of a second one, and a new name matching a task of the same tree is
+  created *as* that task's note — so writing it from the notebook and opening it from the
+  card land on one note. The picker drops its "create" offer once an exact match is listed. They used
   to be one HTML field per tree (`tree.notebook`); `migrateNotesToSection()` moved them and
   kept `treeId`, so a tree's own button still opens the same text — `openNoteForTree()`
   makes that note on first use rather than seeding a blank one per tree. A note with no
