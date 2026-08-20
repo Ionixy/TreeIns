@@ -281,12 +281,16 @@
     font-size:17px; display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none;}
   .leaf-toggle.bloom{background:var(--tint); }
 
-  /* Icon row: three 30px hit targets + gaps fit inside the 160px card on one line. */
-  .node-actions{display:flex; gap:6px; justify-content:center; flex-wrap:nowrap;}
-  .icon-act{width:30px; height:30px; flex:none; border:none; border-radius:9px; background:var(--fill);
+  /* Icon row: four 28px hit targets plus 5px gaps come to 127, inside the 136 a 160px
+     card leaves after its padding. Adding a fifth means rethinking the row, not shrinking. */
+  .node-actions{display:flex; gap:5px; justify-content:center; flex-wrap:nowrap;}
+  .icon-act{width:28px; height:28px; flex:none; border:none; border-radius:9px; background:var(--fill);
+    position:relative;
     color:var(--label-2); font-size:14px; line-height:1; display:flex; align-items:center;
     justify-content:center; cursor:pointer; padding:0;}
-  .icon-act svg{width:16px; height:16px;}
+  .icon-act svg{width:15px; height:15px;}
+  .icon-act.has-note::after{content:''; position:absolute; top:2px; right:2px; width:6px;
+    height:6px; border-radius:50%; background:var(--orange);}
   .icon-act:focus-visible{outline:2px solid var(--tint); outline-offset:1px;}
   .node-card.root .icon-act{background:rgba(255,255,255,.22); color:#fff;}
   /* armed delete: one more press on the same trash confirms, Esc backs out */
@@ -809,6 +813,8 @@ ru: {
   'notes.deleted':'Заметка удалена', 'notes.confirmDelete':'Удалить заметку «{name}»?',
   'notes.noteGone':'Заметка удалена — переходить некуда.',
   'notes.backToNotes':'Заметки', 'notes.contains':'{n} внутри', 'notes.create':'Создать',
+  'notes.ofNode':'по задаче «{name}»', 'notes.taskNotes':'Заметки по задачам',
+  'notes.openNote':'Заметка задачи',
   'notes.mainOnes':'Основные', 'notes.alsoIn':'есть и в других заметках',
   'today.rings':'Сегодня', 'today.habits':'Привычки', 'today.tasks':'Задачи',
   'today.week':'Неделя', 'today.weekDays':'{n} из {total} дней',
@@ -976,6 +982,8 @@ en: {
   'notes.deleted':'Note deleted', 'notes.confirmDelete':'Delete the note “{name}”?',
   'notes.noteGone':'That note was deleted — nowhere to jump to.',
   'notes.backToNotes':'Notes', 'notes.contains':'{n} inside', 'notes.create':'Create',
+  'notes.ofNode':'on the task “{name}”', 'notes.taskNotes':'Task notes',
+  'notes.openNote':'Task note',
   'notes.mainOnes':'Main notes', 'notes.alsoIn':'also linked elsewhere',
   'today.rings':'Today', 'today.habits':'Habits', 'today.tasks':'Tasks',
   'today.week':'Week', 'today.weekDays':'{n} of {total} days',
@@ -1668,6 +1676,21 @@ function openNoteForTree(treeId){
   if(!note){ note = createNote({treeId, title:treeName(tree)}); save(); NOTE_DRAFT = note.id; }
   openNote(note.id, 'tree');
 }
+/* A task's note. The tree's own note is made alongside it if it does not exist yet: it is
+   the shelf this one stands on, and without it the task note would have nowhere to be
+   filed and would surface in the list as a topic of its own. The root's note IS the
+   tree's note — a goal and its tree are the same thing to write about. */
+function openNoteForNode(treeId, nodeId){
+  const tree = findTree(treeId);
+  const node = tree && findNode(tree.root, nodeId);
+  if(!node) return;
+  if(node.id === tree.root.id) return openNoteForTree(treeId);
+  if(!noteForTree(treeId)) createNote({treeId, title:treeName(tree)});
+  let note = noteForNode(treeId, nodeId);
+  if(!note){ note = createNote({treeId, nodeId, title:node.text}); NOTE_DRAFT = note.id; }
+  save();
+  openNote(note.id, 'tree');
+}
 function openNote(noteId, back){
   flushNotebook();
   discardEmptyDraft(noteId);   // following a link out of an untouched draft drops it
@@ -1903,8 +1926,13 @@ function renderNodeActionsRow(tree,node,isRoot){
   // differs, since the daily root collects "задания" rather than "ветки".
   const addLabel = isRoot && isDaily ? tr('tree.addTask') : tr('tree.addBranch');
 
+  // The dot marks a note that already has something in it, so a card says at a glance
+  // whether there is anything written about that task.
+  const ownNote = node.id === tree.root.id ? noteForTree(tree.id) : noteForNode(tree.id, node.id);
+  const written = ownNote && !noteIsEmpty(ownNote) ? ' has-note' : '';
   const actions = [
     `<button type="button" class="icon-act" data-editnode="${tree.id}|${node.id}" title="${tr('common.edit')}" aria-label="${tr('common.edit')}">${ACT_ICONS.edit}</button>`,
+    `<button type="button" class="icon-act${written}" data-opennote="${tree.id}|${node.id}" title="${tr('notes.openNote')}" aria-label="${tr('notes.openNote')}">${ACT_ICONS.note}</button>`,
     `<button type="button" class="icon-act" data-addform="${node.id}" title="${addLabel}" aria-label="${addLabel}">${ACT_ICONS.add}</button>`
   ];
   if(canDelete){
@@ -2730,7 +2758,12 @@ function flushNotebook(){
 
 function allNotes(){ return Array.isArray(DATA.notes) ? DATA.notes : (DATA.notes = []); }
 function findNote(id){ return allNotes().find(n => n.id === id) || null; }
-function noteForTree(treeId){ return allNotes().find(n => n.treeId === treeId) || null; }
+// The tree's own note is the one with no node attached; each task has its own alongside it.
+function noteForTree(treeId){ return allNotes().find(n => n.treeId === treeId && !n.nodeId) || null; }
+function noteForNode(treeId, nodeId){
+  return allNotes().find(n => n.treeId === treeId && n.nodeId === nodeId) || null;
+}
+function nodeNotesOf(treeId){ return allNotes().filter(n => n.treeId === treeId && n.nodeId); }
 function createNote(fields){
   const note = Object.assign({ id:uid(), title:'', body:'', treeId:null,
                                createdAt:todayISO(), updatedAt:todayISO() }, fields||{});
@@ -2742,10 +2775,11 @@ function noteIsEmpty(note){
   if(!note) return true;
   const tpl = document.createElement('template'); tpl.innerHTML = note.body || '';
   const tree = note.treeId && findTree(note.treeId);
-  // A tree's note is born holding the tree's name; that prefill is not something the
-  // person wrote, so it must not keep an untouched note alive.
+  const node = tree && note.nodeId && findNode(tree.root, note.nodeId);
+  // A tree's note is born holding the tree's name and a task's note the task's; that
+  // prefill is not something the person wrote, so it must not keep an untouched note alive.
   const title = (note.title || '').trim();
-  const titleIsPrefill = tree && title === treeName(tree);
+  const titleIsPrefill = tree && title === (node ? node.text : treeName(tree));
   return (!title || titleIsPrefill) && !(tpl.content.textContent || '').trim()
     && !tpl.content.querySelector('a[data-nodelink],a[data-notelink]');
 }
@@ -2767,6 +2801,17 @@ function noteLinkIds(note){
   while((m = re.exec((note && note.body) || ''))){ if(!ids.includes(m[1])) ids.push(m[1]); }
   return ids;
 }
+/* What sits inside a note. Two kinds of edge, and they are different in nature: a link is
+   something the author wrote into the text, while a task's note belongs to its tree's note
+   by construction — nobody has to link it for it to live there. Both are listed here so
+   the list and the editor never disagree about what is inside what. */
+function noteChildren(note){
+  const owned = (note.treeId && !note.nodeId) ? nodeNotesOf(note.treeId) : [];
+  const linked = noteLinkIds(note).map(findNote).filter(Boolean);
+  const seen = new Set([note.id]);
+  return owned.concat(linked).filter(n => !seen.has(n.id) && seen.add(n.id));
+}
+
 /* The list's shape comes from the links, because that is the only structure there is.
    A note nobody links to is a main note; a note linked from another sits inside it.
 
@@ -2779,14 +2824,14 @@ function noteForest(){
   const notes = allNotes();
   const byRecent = (a,b) => String(b.updatedAt||'').localeCompare(String(a.updatedAt||''))
                          || noteTitle(a).localeCompare(noteTitle(b));
-  const parents = new Map();                    // id -> how many notes link to it
-  notes.forEach(n => noteLinkIds(n).forEach(id => parents.set(id, (parents.get(id)||0) + 1)));
+  const parents = new Map();                    // id -> how many notes claim it
+  notes.forEach(n => noteChildren(n).forEach(c => parents.set(c.id, (parents.get(c.id)||0) + 1)));
 
   const placed = new Set(), out = [];
   const walk = (note, depth) => {
     if(placed.has(note.id)) return;
     placed.add(note.id);
-    const kids = noteLinkIds(note).map(findNote).filter(Boolean);
+    const kids = noteChildren(note);
     out.push({ note, depth, children: kids.length, alsoLinked: (parents.get(note.id)||0) > 1 });
     kids.forEach(k => walk(k, depth + 1));
   };
@@ -2847,8 +2892,12 @@ function renderNoteView(){
   const note = findNote(NOTE_OPEN);
   if(!note) return `<div class="empty">${tr('notes.deleted')}</div>`;
   const tree = note.treeId ? findTree(note.treeId) : null;
+  const node = tree && note.nodeId ? findNode(tree.root, note.nodeId) : null;
   const body = resolveNoteLinks(tree, sanitizeNotebook(note.body || ''));
   const links = backlinksTo(note.id);
+  // A tree's note lists the notes written on its tasks, so they are reachable from the
+  // notes side too — the same note the task's own button opens.
+  const owned = (tree && !note.nodeId) ? nodeNotesOf(tree.id) : [];
   const btn = (cmd,label,icon,extra)=>
     `<button type="button" class="fmt-btn" data-fmt="${cmd}" title="${label}" aria-label="${label}"${extra||''}>${icon}</button>`;
   const back = NOTE_BACK === 'tree' && tree
@@ -2858,7 +2907,8 @@ function renderNoteView(){
   ${back}
   <input type="text" id="note-title" class="note-title" value="${esc(note.title||'')}"
      placeholder="${tr('notes.titlePlaceholder')}" aria-label="${tr('notes.titlePlaceholder')}">
-  <p class="tree-goal-line">${tree ? tr('notes.ofTree',{name:esc(treeName(tree))}) : tr('note.sub')}</p>
+  <p class="tree-goal-line">${node ? tr('notes.ofNode',{name:esc(node.text)})
+    : tree ? tr('notes.ofTree',{name:esc(treeName(tree))}) : tr('note.sub')}</p>
   <div class="note-wrap">
     <div class="note-toolbar" id="note-toolbar">
       ${btn('formatBlock',tr('note.heading'),'H')}
@@ -2874,6 +2924,9 @@ function renderNoteView(){
     <div class="note-editor" id="note-editor" contenteditable="true" role="textbox" aria-multiline="true"
          aria-label="${tr('note.aria')}" data-placeholder="${tr('note.placeholder')}">${body}</div>
   </div>
+  ${owned.length ? `<div class="section-title">${tr('notes.taskNotes')}</div>
+    <div class="settings-group">${owned.map(n=>`<div class="setting-row note-row" data-open-note="${n.id}">
+      <span class="note-row-body"><b>${esc(noteTitle(n))}</b></span><span class="chev-right">›</span></div>`).join('')}</div>` : ''}
   ${links.length ? `<div class="section-title">${tr('notes.linked')}</div>
     <div class="settings-group">${links.map(n=>`<div class="setting-row note-row" data-open-note="${n.id}">
       <span class="note-row-body"><b>${esc(noteTitle(n))}</b></span><span class="chev-right">›</span></div>`).join('')}</div>` : ''}
@@ -3319,6 +3372,10 @@ function normalizeRestored(d){
       if(typeof n.title !== 'string') n.title = '';
       if(typeof n.body !== 'string') n.body = '';
       if(n.treeId && !d.trees.some(t => t.id === n.treeId)) n.treeId = null;  // orphaned
+      // A task note whose task is gone keeps its nodeId on purpose. Clearing it would
+      // leave a note with a treeId and no nodeId — which is exactly what marks a tree's
+      // own note, so the tree would end up with two of them. Only a vanished tree detaches.
+      if(n.nodeId && !n.treeId) n.nodeId = null;
       return n;
     });
   if(!d.streak || typeof d.streak !== 'object') d.streak = defaultData().streak;
@@ -3524,6 +3581,10 @@ function bindEvents(){
   });
 
   /* ---- notebook ---- */
+  app.querySelectorAll('[data-opennote]').forEach(el=>el.addEventListener('click',()=>{
+    const [tid,nid] = el.dataset.opennote.split('|');
+    openNoteForNode(tid,nid);
+  }));
   app.querySelectorAll('[data-open-note]').forEach(el=>el.addEventListener('click',()=>
     openNote(el.dataset.openNote, VIEW === 'note' ? NOTE_BACK : 'notes')));
   const newNote = app.querySelector('[data-new-note]');
