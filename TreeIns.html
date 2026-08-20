@@ -127,7 +127,11 @@
     padding:calc(10px + var(--safe-t)) calc(16px + var(--safe-r)) 10px calc(16px + var(--safe-l));
     position:sticky;top:0;z-index:5;background:var(--bar-bg);
     -webkit-backdrop-filter:saturate(180%) blur(20px); backdrop-filter:saturate(180%) blur(20px);
-    box-shadow:0 .5px 0 var(--separator);}
+    transition:box-shadow .2s ease;}
+  /* The hairline exists to separate the bar from content passing underneath it, so it
+     appears only once something actually has. On a screen that fits, it was a line drawn
+     across the window for no reason. */
+  body.scrolled .topbar{box-shadow:0 .5px 0 var(--separator);}
   .brand{display:flex;align-items:center;gap:8px;}
   .brand-mark{height:30px;width:auto;flex:none;display:block;}
   .brand h1{font-size:24px;margin:0;letter-spacing:-.022em;font-weight:700;color:var(--label);}
@@ -604,8 +608,7 @@
     /* The two deliberate exceptions are chrome, not content, and both go edge to edge so
        they read as a different layer rather than as a block that failed to line up. */
     .topbar{margin:0 calc(-32px - var(--safe-r)) 18px -32px;
-      padding:calc(18px + var(--safe-t)) calc(32px + var(--safe-r)) 14px 32px;
-      box-shadow:0 .5px 0 var(--separator);}
+      padding:calc(18px + var(--safe-t)) calc(32px + var(--safe-r)) 14px 32px;}
     #app > .content.view-tree{max-width:none;}
     .view-tree > .back-btn, .view-tree > .tree-title-block, .view-tree > .tree-goal-line{
       max-width:var(--col); width:100%; margin-left:auto; margin-right:auto;}
@@ -1229,6 +1232,7 @@ function load(){
   render();
   startDayWatcher();
   startEscHandler();
+  startScrollWatcher();
   startNotebookFlush();
   checkShareHash();
 }
@@ -1379,6 +1383,16 @@ function startDayWatcher(){
 // re-bound per render would stack up duplicates. Esc backs out of whichever transient
 // state is open: the add-branch panel, an armed delete, or the edit popover.
 let ESC_BOUND = false;
+let SCROLL_BOUND = false;
+function syncScrolledFlag(){
+  document.body.classList.toggle('scrolled', (window.scrollY || 0) > 2);
+}
+function startScrollWatcher(){
+  if(SCROLL_BOUND) return;
+  SCROLL_BOUND = true;
+  // passive: this only ever reads scrollY, and must never delay the scroll itself
+  window.addEventListener('scroll', syncScrolledFlag, {passive:true});
+}
 function startEscHandler(){
   if(ESC_BOUND) return;
   ESC_BOUND = true;
@@ -1694,6 +1708,7 @@ function openNoteForNode(treeId, nodeId){
 function openNote(noteId, back){
   flushNotebook();
   discardEmptyDraft(noteId);   // following a link out of an untouched draft drops it
+  goTop();
   NOTE_OPEN = noteId; NOTE_BACK = back || 'notes'; VIEW='note';
   OPEN_FORM=null; PENDING_DELETE=null; NODE_POPOVER=null; REMINDER=null;
   NODE_PICKER=null; NODE_PICKER_FILTER=''; NOTE_SAVED_RANGE=null;
@@ -1728,7 +1743,10 @@ function actionConfirmNote(){
   const tree = note.treeId && findTree(note.treeId);
   if(NOTE_BACK === 'tree' && tree) openTree(tree.id); else goNotes();
 }
-function leavingNote(){ flushNotebook(); discardEmptyDraft(); }
+// Arriving at a screen already scrolled halfway down is wrong on its own, and it is also
+// what left the topbar's hairline showing on a screen that has nothing under it.
+function goTop(){ try{ window.scrollTo(0,0); }catch(_){ } }
+function leavingNote(){ flushNotebook(); discardEmptyDraft(); goTop(); }
 function actionDeleteNote(id){
   const note = findNote(id);
   if(!note) return;
@@ -1754,6 +1772,7 @@ function render(){
     (REMINDER ? renderReminder() : '') +
     (CONGRATS_TREE ? renderCongrats() : '');
   bindEvents();
+  syncScrolledFlag();   // the new screen may be shorter than the one that was scrolled
 }
 
 function renderTopbar(){
